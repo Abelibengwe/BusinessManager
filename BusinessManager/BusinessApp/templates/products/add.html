@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Product - BK-Pro Business Manager{% endblock %}
+
+{% block content %}
+<div class="add-product-container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 text-gradient">Add New Product</h1>
+            <p class="text-muted">Add a new product to your inventory</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'product_list' %}" class="btn btn-modern btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <!-- Product Form -->
+            <div class="modern-card" data-aos="fade-up">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">Product Information</h5>
+                </div>
+                <div class="modern-card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <!-- Product Name -->
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">
+                                    Please provide a product name.
+                                </div>
+                            </div>
+
+                            <!-- SKU -->
+                            <div class="col-md-6">
+                                <label for="sku" class="form-label">SKU *</label>
+                                <input type="text" class="form-control" id="sku" name="sku" required>
+                                <div class="form-text">Stock Keeping Unit - must be unique</div>
+                                <div class="invalid-feedback">
+                                    Please provide a unique SKU.
+                                </div>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category *</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="category" name="category" 
+                                           list="categoryList" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="newCategoryBtn">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <datalist id="categoryList">
+                                    {% for category in categories %}
+                                    <option value="{{ category.name }}">
+                                    {% endfor %}
+                                </datalist>
+                                <div class="invalid-feedback">
+                                    Please select or enter a category.
+                                </div>
+                            </div>
+
+                            <!-- Supplier -->
+                            <div class="col-md-6">
+                                <label for="supplier" class="form-label">Supplier</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="supplier" name="supplier" 
+                                           list="supplierList">
+                                    <button class="btn btn-outline-secondary" type="button" id="newSupplierBtn">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <datalist id="supplierList">
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.name }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" 
+                                         placeholder="Enter product description..."></textarea>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="text-primary mb-3">Pricing Information</h6>
+                        <div class="row g-3">
+                            <!-- Cost Price -->
+                            <div class="col-md-6">
+                                <label for="cost_price" class="form-label">Cost Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" id="cost_price" 
+                                           name="cost_price" step="0.01" min="0" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid cost price.
+                                </div>
+                            </div>
+
+                            <!-- Selling Price -->
+                            <div class="col-md-6">
+                                <label for="selling_price" class="form-label">Selling Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control currency-input" id="selling_price" 
+                                           name="selling_price" step="0.01" min="0" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid selling price.
+                                </div>
+                            </div>
+
+                            <!-- Profit Margin Display -->
+                            <div class="col-12">
+                                <div class="alert alert-info d-none" id="profitMarginAlert">
+                                    <i class="fas fa-calculator me-2"></i>
+                                    <strong>Profit Margin: </strong>
+                                    <span id="profitMarginValue">0%</span>
+                                    <span class="ms-2">|</span>
+                                    <strong class="ms-2">Profit per Unit: </strong>
+                                    <span id="profitPerUnitValue">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="text-primary mb-3">Inventory Information</h6>
+                        <div class="row g-3">
+                            <!-- Initial Stock -->
+                            <div class="col-md-6">
+                                <label for="stock_quantity" class="form-label">Initial Stock Quantity</label>
+                                <input type="number" class="form-control" id="stock_quantity" 
+                                       name="stock_quantity" min="0" value="0">
+                                <div class="form-text">Starting quantity in inventory</div>
+                            </div>
+
+                            <!-- Min Stock Level -->
+                            <div class="col-md-6">
+                                <label for="min_stock_level" class="form-label">Minimum Stock Level</label>
+                                <input type="number" class="form-control" id="min_stock_level" 
+                                       name="min_stock_level" min="0" value="10">
+                                <div class="form-text">Alert when stock falls below this level</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'product_list' %}" class="btn btn-modern btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-modern btn-primary">
+                                <i class="fas fa-save"></i> Save Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <!-- Product Image Upload -->
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">Product Image</h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="image-upload-container">
+                        <div class="image-preview" id="imagePreview">
+                            <i class="fas fa-camera"></i>
+                            <p>Click to upload image</p>
+                        </div>
+                        <input type="file" class="d-none" id="imageInput" name="image" accept="image/*">
+                    </div>
+                    <div class="form-text mt-2">
+                        Supported formats: JPG, PNG, GIF. Max size: 5MB
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Quick Tips
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use clear, descriptive product names
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Ensure SKU codes are unique
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Set realistic minimum stock levels
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Add high-quality product images
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Include detailed descriptions
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.image-upload-container {
+    position: relative;
+}
+
+.image-preview {
+    width: 100%;
+    height: 200px;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg-tertiary);
+}
+
+.image-preview:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.image-preview i {
+    font-size: 2rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.image-preview.has-image {
+    padding: 0;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tip-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.tip-item:last-child {
+    margin-bottom: 0;
+}
+
+.currency-input:focus {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Image upload preview
+    $('#imagePreview').click(function() {
+        $('#imageInput').click();
+    });
+    
+    $('#imageInput').change(function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#imagePreview').addClass('has-image').html(`
+                    <img src="${e.target.result}" alt="Preview">
+                `);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Generate SKU automatically
+    $('#name').on('input', function() {
+        const name = $(this).val();
+        if (name && !$('#sku').val()) {
+            const sku = generateSKU(name);
+            $('#sku').val(sku);
+        }
+    });
+    
+    // Calculate profit margin
+    $('#cost_price, #selling_price').on('input', function() {
+        calculateProfitMargin();
+    });
+    
+    // Form validation
+    $('.needs-validation').on('submit', function(e) {
+        if (!this.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        $(this).addClass('was-validated');
+    });
+});
+
+function generateSKU(name) {
+    // Generate SKU from product name
+    const words = name.toUpperCase().split(' ');
+    let sku = '';
+    
+    if (words.length === 1) {
+        sku = words[0].substring(0, 4);
+    } else {
+        sku = words.map(word => word.charAt(0)).join('');
+        if (sku.length < 3) {
+            sku += words[0].substring(1, 4 - sku.length);
+        }
+    }
+    
+    // Add random number
+    sku += Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    
+    return sku;
+}
+
+function calculateProfitMargin() {
+    const costPrice = parseFloat($('#cost_price').val()) || 0;
+    const sellingPrice = parseFloat($('#selling_price').val()) || 0;
+    
+    if (costPrice > 0 && sellingPrice > 0) {
+        const profitPerUnit = sellingPrice - costPrice;
+        const profitMargin = (profitPerUnit / costPrice) * 100;
+        
+        $('#profitMarginValue').text(profitMargin.toFixed(1) + '%');
+        $('#profitPerUnitValue').text('$' + profitPerUnit.toFixed(2));
+        
+        // Color code the margin
+        const $alert = $('#profitMarginAlert');
+        $alert.removeClass('alert-info alert-warning alert-danger alert-success');
+        
+        if (profitMargin > 30) {
+            $alert.addClass('alert-success');
+        } else if (profitMargin > 15) {
+            $alert.addClass('alert-info');
+        } else if (profitMargin > 0) {
+            $alert.addClass('alert-warning');
+        } else {
+            $alert.addClass('alert-danger');
+        }
+        
+        $alert.removeClass('d-none');
+    } else {
+        $('#profitMarginAlert').addClass('d-none');
+    }
+}
+</script>
+{% endblock %}

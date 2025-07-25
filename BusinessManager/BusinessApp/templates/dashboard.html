@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - BK-Pro Business Manager{% endblock %}
+
+{% block content %}
+<div id="dashboard-app" class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 text-gradient">Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
+            <p class="text-muted">Here's what's happening with your business today.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-modern btn-secondary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary">
+                <i class="fas fa-plus"></i> New Sale
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="100">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="stat-value">{{ total_products|default:0 }}</div>
+                <div class="stat-label">Total Products</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 12% from last month
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="200">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-value">{{ total_sales|default:0 }}</div>
+                <div class="stat-label">Sales This Month</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 8% from last month
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="300">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-value">${{ total_revenue|floatformat:0|default:0 }}</div>
+                <div class="stat-label">Revenue</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 15% from last month
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="400">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value">${{ profit|floatformat:0|default:0 }}</div>
+                <div class="stat-label">Net Profit</div>
+                <div class="stat-change {% if profit >= 0 %}positive{% else %}negative{% endif %}">
+                    <i class="fas fa-arrow-{% if profit >= 0 %}up{% else %}down{% endif %}"></i> 
+                    {% if profit >= 0 %}23%{% else %}5%{% endif %} from last month
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8">
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="500">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Sales Overview</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary active" onclick="loadSalesChartData(7)">7D</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(30)">30D</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(90)">90D</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    <canvas id="salesChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="modern-card h-100" data-aos="fade-up" data-aos-delay="600">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary">
+                            <i class="fas fa-plus me-2"></i>Record New Sale
+                        </a>
+                        <a href="{% url 'product_add' %}" class="btn btn-modern btn-success">
+                            <i class="fas fa-box me-2"></i>Add Product
+                        </a>
+                        <a href="{% url 'expense_add' %}" class="btn btn-modern btn-warning">
+                            <i class="fas fa-receipt me-2"></i>Add Expense
+                        </a>
+                        <a href="{% url 'project_add' %}" class="btn btn-modern btn-info">
+                            <i class="fas fa-project-diagram me-2"></i>Create Project
+                        </a>
+                        <a href="{% url 'reports' %}" class="btn btn-modern btn-secondary">
+                            <i class="fas fa-chart-bar me-2"></i>View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row g-4">
+        <!-- Recent Sales -->
+        <div class="col-xl-6">
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="700">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Sales</h5>
+                        <a href="{% url 'sale_list' %}" class="text-primary text-decoration-none">View All</a>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    {% if recent_sales %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sale in recent_sales %}
+                                    <tr>
+                                        <td><strong>#{{ sale.id }}</strong></td>
+                                        <td>{{ sale.customer.name|default:"Walk-in Customer" }}</td>
+                                        <td>${{ sale.total_amount }}</td>
+                                        <td>{{ sale.sale_date|date:"M d, Y" }}</td>
+                                        <td><span class="badge badge-success">Completed</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-shopping-cart text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No recent sales found</p>
+                            <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary">
+                                <i class="fas fa-plus"></i> Record First Sale
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        <div class="col-xl-6">
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="800">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Low Stock Alerts</h5>
+                        <a href="{% url 'product_list' %}" class="text-warning text-decoration-none">Manage Stock</a>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    {% if low_stock_products %}
+                        <div class="list-group list-group-flush">
+                            {% for product in low_stock_products %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ product.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">SKU: {{ product.sku }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge badge-warning">{{ product.stock_quantity }} left</span>
+                                    <br>
+                                    <small class="text-muted">Min: {{ product.min_stock_level }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">All products are well stocked!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Overview -->
+    {% if recent_projects %}
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="modern-card" data-aos="fade-up" data-aos-delay="900">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Active Projects</h5>
+                        <a href="{% url 'project_list' %}" class="text-primary text-decoration-none">View All Projects</a>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    <div class="row g-3">
+                        {% for project in recent_projects %}
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ project.name }}</h6>
+                                    <p class="card-text text-muted">{{ project.description|truncatechars:60 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Progress</small>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar" style="width: {{ project.progress }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ project.progress }}% complete</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge badge-{{ project.status|lower }}">{{ project.get_status_display }}</span>
+                                        <small class="text-muted">${{ project.budget }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-lg);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.search-result-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.search-result-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-price {
+    text-align: right;
+    font-weight: 600;
+}
+
+.stock-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: block;
+}
+
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.badge-planning { background-color: var(--info-color); }
+.badge-in_progress { background-color: var(--warning-color); }
+.badge-completed { background-color: var(--success-color); }
+.badge-on_hold { background-color: var(--secondary-color); }
+.badge-cancelled { background-color: var(--danger-color); }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize dashboard components
+    if ($('#salesChart').length) {
+        createSalesChart();
+    }
+});
+</script>
+{% endblock %}

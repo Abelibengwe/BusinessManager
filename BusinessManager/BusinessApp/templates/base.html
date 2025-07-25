@@ -21,33 +21,37 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<<body class="modern-body">
+<body class="modern-body">
     <!-- Navigation -->
     {% if user.is_authenticated %}
     <nav class="navbar navbar-expand-lg modern-navbar fixed-top">
-        <div class="container-fluid px-4">
+        <div class="container-fluid px-3">
+            <!-- Brand -->
             <a class="navbar-brand modern-brand" href="{% url 'dashboard' %}">
                 <div class="brand-logo">
                     <div class="logo-icon">
                         <i class="fas fa-cube"></i>
                     </div>
-                    <div class="brand-text">
+                    <div class="brand-text d-none d-sm-block">
                         <span class="brand-name">BK-Pro</span>
-                        <span class="brand-subtitle">Business Manager</span>
+                        <span class="brand-subtitle">Business</span>
                     </div>
                 </div>
             </a>
             
-            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- Mobile toggle -->
+            <button class="navbar-toggler custom-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
             
+            <!-- Collapsible content -->
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <!-- Main Navigation - Hidden on mobile, shown in sidebar -->
+                <ul class="navbar-nav me-auto d-none d-xl-flex">
                     <li class="nav-item">
-                        <a class="nav-link modern-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                        <a class="nav-link modern-nav-link nav-dashboard {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
                            href="{% url 'dashboard' %}">
                             <i class="fas fa-chart-line"></i>
                             <span>Dashboard</span>
@@ -55,7 +59,7 @@
                     </li>
                     
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle modern-nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle modern-nav-link nav-inventory" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-boxes"></i>
                             <span>Inventory</span>
                         </a>
@@ -66,15 +70,11 @@
                             <li><a class="dropdown-item modern-dropdown-item" href="{% url 'product_add' %}">
                                 <i class="fas fa-plus-circle"></i>Add Product
                             </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'stock_in_list' %}">
-                                <i class="fas fa-warehouse"></i>Stock Management
-                            </a></li>
                         </ul>
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link modern-nav-link {% if 'sale' in request.resolver_match.url_name %}active{% endif %}" 
+                        <a class="nav-link modern-nav-link nav-sales {% if 'sale' in request.resolver_match.url_name %}active{% endif %}" 
                            href="{% url 'sale_list' %}">
                             <i class="fas fa-shopping-cart"></i>
                             <span>Sales</span>
@@ -82,42 +82,33 @@
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link modern-nav-link {% if 'expense' in request.resolver_match.url_name %}active{% endif %}" 
+                        <a class="nav-link modern-nav-link nav-expenses {% if 'expense' in request.resolver_match.url_name %}active{% endif %}" 
                            href="{% url 'expense_list' %}">
                             <i class="fas fa-credit-card"></i>
                             <span>Expenses</span>
                         </a>
                     </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link modern-nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}" 
-                           href="{% url 'project_list' %}">
-                            <i class="fas fa-project-diagram"></i>
-                            <span>Projects</span>
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link modern-nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}" 
-                           href="{% url 'reports' %}">
-                            <i class="fas fa-chart-bar"></i>
-                            <span>Analytics</span>
-                        </a>
-                    </li>
                 </ul>
                 
+                <!-- Right side items -->
                 <ul class="navbar-nav ms-auto">
-                    <!-- Search Bar -->
-                    <li class="nav-item me-3">
+                    <!-- Search Toggle - Hidden on small screens -->
+                    <li class="nav-item me-2 d-none d-md-block">
                         <div class="search-container">
-                            <input type="text" class="form-control search-input" placeholder="Search...">
-                            <i class="fas fa-search search-icon"></i>
+                            <button class="search-toggle" id="searchToggle" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <div class="search-field" id="searchField">
+                                <input type="text" class="search-input" placeholder="Search products, sales..." id="productSearch">
+                                <i class="fas fa-search search-icon-field"></i>
+                                <div id="searchResults" class="search-results" style="display: none;"></div>
+                            </div>
                         </div>
                     </li>
                     
                     <!-- Notifications -->
                     <li class="nav-item dropdown me-2">
-                        <a class="nav-link notification-bell position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link notification-bell position-relative p-2" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-bell"></i>
                             {% if notifications %}
                             <span class="notification-badge">{{ notifications.count }}</span>
@@ -132,7 +123,8 @@
                             </li>
                             {% for notification in notifications %}
                             <li>
-                                <a class="dropdown-item notification-item" href="#" onclick="markAsRead({{ notification.id }})">
+                                <a class="dropdown-item notification-item" href="#" 
+                                   data-notification-id="{{ notification.id }}">
                                     <div class="notification-content">
                                         <div class="notification-title">{{ notification.title }}</div>
                                         <div class="notification-text">{{ notification.message|truncatechars:50 }}</div>
@@ -144,41 +136,40 @@
                             <li class="no-notifications">
                                 <div class="text-center py-3">
                                     <i class="fas fa-bell-slash text-muted"></i>
-                                    <p class="text-muted mb-0 mt-2">No new notifications</p>
+                                    <p class="text-muted mb-0 mt-2">No notifications</p>
                                 </div>
                             </li>
                             {% endfor %}
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center view-all" href="{% url 'notifications' %}">View All Notifications</a></li>
+                            <li><a class="dropdown-item text-center view-all" href="{% url 'notifications' %}">View All</a></li>
                         </ul>
                     </li>
                     
                     <!-- User Profile -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link user-profile" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link user-profile p-2" href="#" role="button" data-bs-toggle="dropdown">
                             <div class="user-avatar">
-                                <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=6366f1&color=fff&size=32" alt="User Avatar">
+                                <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=2563eb&color=fff&size=32" alt="Avatar">
                             </div>
                             <div class="user-info d-none d-lg-block">
                                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                <span class="user-role">Administrator</span>
+                                <span class="user-role">Admin</span>
                             </div>
-                            <i class="fas fa-chevron-down ms-2"></i>
+                            <i class="fas fa-chevron-down ms-1 d-none d-lg-block"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end modern-dropdown user-dropdown">
                             <li class="user-dropdown-header">
                                 <div class="user-info-full">
-                                    <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=6366f1&color=fff&size=40" alt="User Avatar">
+                                    <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=2563eb&color=fff&size=40" alt="Avatar">
                                     <div>
                                         <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
-                                        <div class="text-muted small">{{ user.email|default:"demo@bkpro.com" }}</div>
+                                        <div class="text-muted small">{{ user.email|default:"admin@bkpro.com" }}</div>
                                     </div>
                                 </div>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-user-circle"></i>My Profile</a></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-user-circle"></i>Profile</a></li>
                             <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-cog"></i>Settings</a></li>
-                            <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-question-circle"></i>Help Center</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item modern-dropdown-item logout-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i>Sign Out</a></li>
                         </ul>
@@ -187,16 +178,16 @@
             </div>
         </div>
     </nav>
-    
-    <!-- Sidebar -->
-    <aside class="modern-sidebar" id="sidebar">
+
+    <!-- Mobile Sidebar -->
+    <aside class="mobile-sidebar d-lg-none" id="mobileSidebar">
         <div class="sidebar-content">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <i class="fas fa-cube brand-icon"></i>
                     <span class="brand-text">BK-Pro</span>
                 </div>
-                <button class="sidebar-toggle" id="sidebarToggle">
+                <button class="sidebar-close" id="sidebarClose">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -204,129 +195,103 @@
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <a href="{% url 'dashboard' %}" class="nav-link nav-dashboard {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                             <i class="fas fa-chart-line nav-icon"></i>
                             <span class="nav-text">Dashboard</span>
                         </a>
                     </li>
-                    
-                    <li class="nav-section">
-                        <span class="nav-section-title">INVENTORY</span>
-                    </li>
                     <li class="nav-item">
-                        <a href="{% url 'product_list' %}" class="nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'product_list' %}" class="nav-link nav-inventory">
                             <i class="fas fa-box nav-icon"></i>
                             <span class="nav-text">Products</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'stock_in_list' %}" class="nav-link {% if 'stock' in request.resolver_match.url_name %}active{% endif %}">
-                            <i class="fas fa-warehouse nav-icon"></i>
-                            <span class="nav-text">Stock Management</span>
-                        </a>
-                    </li>
-                    
-                    <li class="nav-section">
-                        <span class="nav-section-title">SALES & FINANCE</span>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'sale_list' %}" class="nav-link {% if 'sale' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'sale_list' %}" class="nav-link nav-sales">
                             <i class="fas fa-shopping-cart nav-icon"></i>
                             <span class="nav-text">Sales</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'expense_list' %}" class="nav-link {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'expense_list' %}" class="nav-link nav-expenses">
                             <i class="fas fa-credit-card nav-icon"></i>
                             <span class="nav-text">Expenses</span>
                         </a>
                     </li>
-                    
-                    <li class="nav-section">
-                        <span class="nav-section-title">OPERATIONS</span>
-                    </li>
                     <li class="nav-item">
-                        <a href="{% url 'project_list' %}" class="nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'project_list' %}" class="nav-link nav-projects">
                             <i class="fas fa-project-diagram nav-icon"></i>
                             <span class="nav-text">Projects</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                        <a href="{% url 'reports' %}" class="nav-link nav-reports">
                             <i class="fas fa-chart-bar nav-icon"></i>
-                            <span class="nav-text">Analytics</span>
+                            <span class="nav-text">Reports</span>
                         </a>
                     </li>
                 </ul>
             </nav>
-            
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <div class="quick-actions-header">
-                    <span>Quick Actions</span>
-                </div>
-                <div class="quick-actions-grid">
-                    <a href="{% url 'sale_add' %}" class="quick-action-btn">
-                        <i class="fas fa-plus"></i>
-                        <span>New Sale</span>
-                    </a>
-                    <a href="{% url 'product_add' %}" class="quick-action-btn">
-                        <i class="fas fa-box"></i>
-                        <span>Add Product</span>
-                    </a>
-                    <a href="{% url 'expense_add' %}" class="quick-action-btn">
-                        <i class="fas fa-receipt"></i>
-                        <span>Add Expense</span>
-                    </a>
-                    <a href="{% url 'project_add' %}" class="quick-action-btn">
-                        <i class="fas fa-project-diagram"></i>
-                        <span>New Project</span>
-                    </a>
-                </div>
-            </div>
         </div>
     </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div class="sidebar-overlay d-lg-none" id="sidebarOverlay"></div>
 
     <!-- Main Content -->
     <main class="main-content">
         <div class="content-wrapper">
     {% endif %}
                 
-                <!-- Messages -->
-                {% if messages %}
-                <div class="messages-container">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                        {% if message.tags == 'error' %}
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                        {% elif message.tags == 'success' %}
-                            <i class="fas fa-check-circle me-2"></i>
-                        {% elif message.tags == 'warning' %}
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                        {% else %}
-                            <i class="fas fa-info-circle me-2"></i>
-                        {% endif %}
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endfor %}
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                {% endif %}
-                
-                <!-- Page Content -->
-                {% block content %}{% endblock %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
                 
     {% if user.is_authenticated %}
-            </main>
         </div>
-    </div>
+    </main>
     {% endif %}
     
+    <!-- Scripts -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.min.js"></script>
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <!-- Custom JS -->
+    {% load static %}
     <script src="{% static 'js/main.js' %}"></script>
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- CSRF Token for AJAX -->
+    {% csrf_token %}
+    <script>
+        // Make CSRF token available globally
+        window.csrfToken = '{{ csrf_token }}';
+    </script>
 </body>
 </html>

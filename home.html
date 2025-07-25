@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockPro - Advanced Inventory Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1e293b;
+            --light-color: #f8fafc;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-medium: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light-color);
+            overflow-x: hidden;
+        }
+
+        /* Navbar Styling */
+        .navbar-custom {
+            background: var(--gradient-primary);
+            box-shadow: var(--shadow-medium);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0 0.5rem;
+            border-radius: 8px;
+            padding: 0.5rem 1rem !important;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white !important;
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            box-shadow: var(--shadow-medium);
+            border-radius: 15px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .sidebar-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-item:hover, .sidebar-item.active {
+            background: var(--gradient-primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow-medium);
+            padding: 2rem;
+            margin: 2rem 0;
+            min-height: 600px;
+        }
+
+        /* Cards */
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow-light);
+            padding: 2rem;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-heavy);
+            border-color: var(--primary-color);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--secondary-color);
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        /* Forms */
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+
+        /* Buttons */
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary-custom {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-success-custom {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning-custom {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger-custom {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* Tables */
+        .table-custom {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+        }
+
+        .table-custom thead {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .table-custom tbody tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        /* Modal Styling */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .modal-header {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        /* Charts Container */
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: var(--shadow-light);
+            margin: 1rem 0;
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Progress Bars */
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+            background: #e2e8f0;
+        }
+
+        .progress-bar {
+            background: var(--gradient-primary);
+            border-radius: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin: 1rem 0;
+            }
+            
+            .main-content {
+                margin: 1rem 0;
+                padding: 1rem;
+            }
+            
+            .dashboard-card {
+                margin: 0.5rem 0;
+                padding: 1.5rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-boxes"></i> StockPro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-home"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> Account
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Logout</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="#">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 col-md-3">
+                <div class="sidebar fade-in">
+                    <div class="sidebar-item active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="sidebar-item" data-section="products">
+                        <i class="fas fa-box"></i>
+                        <span>Product Management</span>
+                    </div>
+                    <div class="sidebar-item" data-section="services">
+                        <i class="fas fa-tools"></i>
+                        <span>Service Management</span>
+                    </div>
+                    <div class="sidebar-item" data-section="sales">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Sales Management</span>
+                    </div>
+                    <div class="sidebar-item" data-section="inventory">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Inventory Tracking</span>
+                    </div>
+                    <div class="sidebar-item" data-section="expenses">
+                        <i class="fas fa-receipt"></i>
+                        <span>Expenses</span>
+                    </div>
+                    <div class="sidebar-item" data-section="reports">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Reports & Analytics</span>
+                    </div>
+                    <div class="sidebar-item" data-section="orders">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Orders</span>
+                    </div>
+                    <div class="sidebar-item" data-section="payments">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Payments</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 col-md-9">
+                <div class="main-content fade-in" id="main-content">
+                    <!-- Dashboard Section -->
+                    <div id="dashboard-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="fw-bold">Dashboard Overview</h2>
+                            <button class="btn btn-primary-custom btn-custom">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="dashboard-card stat-card">
+                                    <i class="fas fa-boxes fa-3x text-primary mb-3"></i>
+                                    <div class="stat-number">1,247</div>
+                                    <div class="stat-label">Total Products</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="dashboard-card stat-card">
+                                    <i class="fas fa-dollar-sign fa-3x text-success mb-3"></i>
+                                    <div class="stat-number">$45,890</div>
+                                    <div class="stat-label">Monthly Revenue</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="dashboard-card stat-card">
+                                    <i class="fas fa-shopping-cart fa-3x text-warning mb-3"></i>
+                                    <div class="stat-number">156</div>
+                                    <div class="stat-label">Pending Orders</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="dashboard-card stat-card">
+                                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                                    <div class="stat-number">23</div>
+                                    <div class="stat-label">Low Stock Items</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Section -->
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="chart-container">
+                                    <h4 class="mb-3">Revenue Trend</h4>
+                                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="chart-container">
+                                    <h4 class="mb-3">Top Products</h4>
+                                    <canvas id="topProductsChart" width="200" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activities -->
+                        <div class="dashboard-card">
+                            <h4 class="mb-3">Recent Activities</h4>
+                            <div class="table-responsive">
+                                <table class="table table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Activity</th>
+                                            <th>User</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-activities">
+                                        <tr>
+                                            <td>2 mins ago</td>
+                                            <td>New order #12345 created</td>
+                                            <td>John Doe</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>5 mins ago</td>
+                                            <td>Product inventory updated</td>
+                                            <td>Jane Smith</td>
+                                            <td><span class="badge bg-info">In Progress</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>10 mins ago</td>
+                                            <td>Payment processed</td>
+                                            <td>Mike Wilson</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Management Section -->
+                    <div id="products-section" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="fw-bold">Product Management</h2>
+                            <button class="btn btn-success-custom btn-custom" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
+                        </div>
+
+                        <!-- Search and Filter -->
+                        <div class="dashboard-card">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="searchProduct" placeholder="Search products...">
+                                        <label for="searchProduct">Search Products</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="categoryFilter">
+                                            <option value="">All Categories</option>
+                                            <option value="electronics">Electronics</option>
+                                            <option value="clothing">Clothing</option>
+                                            <option value="food">Food & Beverages</option>
+                                            <option value="tools">Tools</option>
+                                        </select>
+                                        <label for="categoryFilter">Category</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="stockFilter">
+                                            <option value="">All Stock Levels</option>
+                                            <option value="low">Low Stock</option>
+                                            <option value="medium">Medium Stock</option>
+                                            <option value="high">High Stock</option>
+                                        </select>
+                                        <label for="stockFilter">Stock Level</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary-custom btn-custom h-100">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Products Table -->
+                        <div class="dashboard-card">
+                            <div class="table-responsive">
+                                <table class="table table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Product ID</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                            <th>Unit</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="products-table">
+                                        <!-- Products will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other sections will be similar... -->
+                    <div id="services-section" style="display: none;">
+                        <h2 class="fw-bold mb-4">Service Management</h2>
+                        <div class="dashboard-card">
+                            <p>Service management features will be implemented here...</p>
+                        </div>
+                    </div>
+
+                    <div id="sales-section" style="display: none;">
+                        <h2 class="fw-bold mb-4">Sales Management</h2>
+                        <div class="dashboard-card">
+                            <p>Sales management features will be implemented here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProductForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="productName" placeholder="Product Name" required>
+                                    <label for="productName">Product Name</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="productSKU" placeholder="SKU" required>
+                                    <label for="productSKU">SKU</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="productCategory" required>
+                                        <option value="">Select Category</option>
+                                        <option value="electronics">Electronics</option>
+                                        <option value="clothing">Clothing</option>
+                                        <option value="food">Food & Beverages</option>
+                                        <option value="tools">Tools</option>
+                                    </select>
+                                    <label for="productCategory">Category</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="productPrice" placeholder="Price" step="0.01" required>
+                                    <label for="productPrice">Price ($)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="productStock" placeholder="Stock Quantity" required>
+                                    <label for="productStock">Stock Quantity</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="productUnit" required>
+                                        <option value="">Select Unit</option>
+                                        <option value="pieces">Pieces</option>
+                                        <option value="kg">Kilograms</option>
+                                        <option value="liters">Liters</option>
+                                        <option value="meters">Meters</option>
+                                        <option value="boxes">Boxes</option>
+                                        <option value="packs">Packs</option>
+                                    </select>
+                                    <label for="productUnit">Unit of Measurement</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="minStockLevel" placeholder="Minimum Stock" required>
+                                    <label for="minStockLevel">Minimum Stock Level</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" id="productDescription" placeholder="Description" style="height: 100px"></textarea>
+                            <label for="productDescription">Description</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success-custom btn-custom" onclick="addProduct()">
+                        <i class="fas fa-save"></i> Save Product
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Vue.js App
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    currentSection: 'dashboard',
+                    products: [],
+                    services: [],
+                    orders: [],
+                    notifications: [],
+                    dashboardStats: {
+                        totalProducts: 1247,
+                        monthlyRevenue: 45890,
+                        pendingOrders: 156,
+                        lowStockItems: 23
+                    }
+                };
+            },
+            mounted() {
+                this.initializeCharts();
+                this.loadProducts();
+                this.setupEventListeners();
+            },
+            methods: {
+                switchSection(section) {
+                    // Hide all sections
+                    document.querySelectorAll('#main-content > div[id$="-section"]').forEach(el => {
+                        el.style.display = 'none';
+                    });
+                    
+                    // Show selected section
+                    document.getElementById(section + '-section').style.display = 'block';
+                    
+                    // Update sidebar
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    document.querySelector(`[data-section="${section}"]`).classList.add('active');
+                    
+                    this.currentSection = section;
+                },
+                
+                initializeCharts() {
+                    // Revenue Chart
+                    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+                    new Chart(revenueCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                            datasets: [{
+                                label: 'Revenue',
+                                data: [12000, 19000, 15000, 25000, 22000, 30000],
+                                borderColor: '#2563eb',
+                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Top Products Chart
+                    const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+                    new Chart(topProductsCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Electronics', 'Clothing', 'Food', 'Tools'],
+                            datasets: [{
+                                data: [30, 25, 25, 20],
+                                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                loadProducts() {
+                    // Simulate loading products
+                    this.products = [
+                        {
+                            id: 'P001',
+                            name: 'Wireless Headphones',
+                            category: 'Electronics',
+                            price: 99.99,
+                            stock: 45,
+                            unit: 'pieces',
+                            status: 'Active'
+                        },
+                        {
+                            id: 'P002',
+                            name: 'Coffee Beans',
+                            category: 'Food',
+                            price: 15.99,
+                            stock: 120,
+                            unit: 'kg',
+                            status: 'Active'
+                        },
+                        {
+                            id: 'P003',
+                            name: 'Cotton T-Shirt',
+                            category: 'Clothing',
+                            price: 25.50,
+                            stock: 8,
+                            unit: 'pieces',
+                            status: 'Low Stock'
+                        }
+                    ];
+                    this.renderProductsTable();
+                },
+                
+                renderProductsTable() {
+                    const tbody = document.getElementById('products-table');
+                    tbody.innerHTML = '';
+                    
+                    this.products.forEach(product => {
+                        const row = document.createElement('tr');
+                        const statusClass = product.status === 'Low Stock' ? 'bg-warning' : 'bg-success';
+                        
+                        row.innerHTML = `
+                            <td>${product.id}</td>
+                            <td>${product.name}</td>
+                            <td>${product.category}</td>
+                            <td>${product.price}</td>
+                            <td>${product.stock}</td>
+                            <td>${product.unit}</td>
+                            <td><span class="badge ${statusClass}">${product.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="editProduct('${product.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger ms-1" onclick="deleteProduct('${product.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                },
+                
+                setupEventListeners() {
+                    // Sidebar navigation
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const section = item.getAttribute('data-section');
+                            this.switchSection(section);
+                        });
+                    });
+                    
+                    // Search functionality
+                    document.getElementById('searchProduct')?.addEventListener('input', (e) => {
+                        this.searchProducts(e.target.value);
+                    });
+                }
+            }
+        }).mount('body');
+        
+        // Global Functions
+        function addProduct() {
+            const form = document.getElementById('addProductForm');
+            const formData = new FormData(form);
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Simulate AJAX call to Django backend
+            const productData = {
+                name: document.getElementById('productName').value,
+                sku: document.getElementById('productSKU').value,
+                category: document.getElementById('productCategory').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                stock: parseInt(document.getElementById('productStock').value),
+                unit: document.getElementById('productUnit').value,
+                minStockLevel: parseInt(document.getElementById('minStockLevel').value),
+                description: document.getElementById('productDescription').value
+            };
+            
+            // Show loading state
+            const saveBtn = document.querySelector('#addProductModal .btn-success-custom');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+            saveBtn.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Reset form and close modal
+                form.reset();
+                bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+                
+                // Show success notification
+                showNotification('Product added successfully!', 'success');
+                
+                // Reset button
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+                
+                // Reload products table
+                // In real implementation, this would make an AJAX call to fetch updated data
+                window.location.reload();
+            }, 1500);
+        }
+        
+        function editProduct(productId) {
+            // Implementation for editing product
+            showNotification(`Editing product ${productId}`, 'info');
+        }
+        
+        function deleteProduct(productId) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                // Simulate delete API call
+                showNotification(`Product ${productId} deleted successfully!`, 'success');
+                // Reload products table
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+        
+        // Real-time updates simulation
+        setInterval(() => {
+            // Update notification badge
+            const badge = document.querySelector('.notification-badge');
+            const currentCount = parseInt(badge.textContent);
+            if (Math.random() > 0.8) { // 20% chance to add notification
+                badge.textContent = currentCount + 1;
+                badge.classList.add('animate__animated', 'animate__pulse');
+                setTimeout(() => {
+                    badge.classList.remove('animate__animated', 'animate__pulse');
+                }, 1000);
+            }
+        }, 10000);
+        
+        // Django Backend Integration Functions
+        class StockManagementAPI {
+            constructor() {
+                this.baseURL = '/api';
+                this.csrfToken = this.getCSRFToken();
+            }
+            
+            getCSRFToken() {
+                // Get CSRF token from Django
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') {
+                        return value;
+                    }
+                }
+                return '';
+            }
+            
+            async request(endpoint, options = {}) {
+                const defaultOptions = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.csrfToken,
+                    },
+                };
+                
+                const config = { ...defaultOptions, ...options };
+                
+                try {
+                    const response = await fetch(`${this.baseURL}${endpoint}`, config);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('API request failed:', error);
+                    throw error;
+                }
+            }
+            
+            // Product Management
+            async getProducts(filters = {}) {
+                const params = new URLSearchParams(filters);
+                return await this.request(`/products/?${params}`);
+            }
+            
+            async createProduct(productData) {
+                return await this.request('/products/', {
+                    method: 'POST',
+                    body: JSON.stringify(productData),
+                });
+            }
+            
+            async updateProduct(productId, productData) {
+                return await this.request(`/products/${productId}/`, {
+                    method: 'PUT',
+                    body: JSON.stringify(productData),
+                });
+            }
+            
+            async deleteProduct(productId) {
+                return await this.request(`/products/${productId}/`, {
+                    method: 'DELETE',
+                });
+            }
+            
+            // Service Management
+            async getServices() {
+                return await this.request('/services/');
+            }
+            
+            async createService(serviceData) {
+                return await this.request('/services/', {
+                    method: 'POST',
+                    body: JSON.stringify(serviceData),
+                });
+            }
+            
+            // Sales Management
+            async createSale(saleData) {
+                return await this.request('/sales/', {
+                    method: 'POST',
+                    body: JSON.stringify(saleData),
+                });
+            }
+            
+            async getSalesReport(dateRange) {
+                return await this.request(`/sales/report/?${new URLSearchParams(dateRange)}`);
+            }
+            
+            // Inventory Management
+            async updateInventory(productId, quantity, operation) {
+                return await this.request(`/inventory/${productId}/`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ quantity, operation }),
+                });
+            }
+            
+            async getLowStockAlerts() {
+                return await this.request('/inventory/low-stock/');
+            }
+            
+            // Order Management
+            async createOrder(orderData) {
+                return await this.request('/orders/', {
+                    method: 'POST',
+                    body: JSON.stringify(orderData),
+                });
+            }
+            
+            async getOrders(status = null) {
+                const params = status ? `?status=${status}` : '';
+                return await this.request(`/orders/${params}`);
+            }
+            
+            async updateOrderStatus(orderId, status) {
+                return await this.request(`/orders/${orderId}/`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status }),
+                });
+            }
+            
+            // Payment Management
+            async processPayment(paymentData) {
+                return await this.request('/payments/', {
+                    method: 'POST',
+                    body: JSON.stringify(paymentData),
+                });
+            }
+            
+            async getPaymentHistory(filters = {}) {
+                const params = new URLSearchParams(filters);
+                return await this.request(`/payments/?${params}`);
+            }
+            
+            // Analytics and Reporting
+            async getDashboardStats() {
+                return await this.request('/analytics/dashboard/');
+            }
+            
+            async getRevenueReport(period) {
+                return await this.request(`/analytics/revenue/?period=${period}`);
+            }
+            
+            async getExpenseReport(period) {
+                return await this.request(`/analytics/expenses/?period=${period}`);
+            }
+            
+            async getProfitReport(period) {
+                return await this.request(`/analytics/profit/?period=${period}`);
+            }
+        }
+        
+        // Initialize API client
+        const api = new StockManagementAPI();
+        
+        // Payment Gateway Integration
+        class PaymentGateway {
+            constructor() {
+                this.stripeKey = 'pk_test_...'; // Your Stripe publishable key
+                this.paypalClientId = 'your_paypal_client_id';
+            }
+            
+            async processStripePayment(amount, currency = 'usd') {
+                // Stripe payment processing
+                const stripe = Stripe(this.stripeKey);
+                
+                try {
+                    const { error, paymentMethod } = await stripe.createPaymentMethod({
+                        type: 'card',
+                        card: {
+                            // Card details would come from form
+                        },
+                    });
+                    
+                    if (error) {
+                        throw new Error(error.message);
+                    }
+                    
+                    // Send payment method to backend for processing
+                    const response = await api.request('/payments/process-stripe/', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            payment_method_id: paymentMethod.id,
+                            amount: amount,
+                            currency: currency,
+                        }),
+                    });
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Stripe payment failed:', error);
+                    throw error;
+                }
+            }
+            
+            async processPayPalPayment(amount, currency = 'USD') {
+                // PayPal payment processing
+                return new Promise((resolve, reject) => {
+                    paypal.Buttons({
+                        createOrder: function(data, actions) {
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: amount,
+                                        currency_code: currency
+                                    }
+                                }]
+                            });
+                        },
+                        onApprove: function(data, actions) {
+                            return actions.order.capture().then(function(details) {
+                                resolve(details);
+                            });
+                        },
+                        onError: function(err) {
+                            reject(err);
+                        }
+                    }).render('#paypal-button-container');
+                });
+            }
+        }
+        
+        // Initialize payment gateway
+        const paymentGateway = new PaymentGateway();
+        
+        // WebSocket for real-time updates
+        class WebSocketManager {
+            constructor() {
+                this.socket = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+            }
+            
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsURL = `${protocol}//${window.location.host}/ws/stock-management/`;
+                
+                this.socket = new WebSocket(wsURL);
+                
+                this.socket.onopen = () => {
+                    console.log('WebSocket connected');
+                    this.reconnectAttempts = 0;
+                };
+                
+                this.socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    this.handleMessage(data);
+                };
+                
+                this.socket.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    this.reconnect();
+                };
+                
+                this.socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+            }
+            
+            handleMessage(data) {
+                switch (data.type) {
+                    case 'stock_update':
+                        this.updateStockDisplay(data.product_id, data.new_stock);
+                        break;
+                    case 'new_order':
+                        this.showNewOrderNotification(data.order);
+                        break;
+                    case 'low_stock_alert':
+                        this.showLowStockAlert(data.product);
+                        break;
+                    case 'payment_received':
+                        this.updatePaymentStatus(data.payment);
+                        break;
+                }
+            }
+            
+            updateStockDisplay(productId, newStock) {
+                // Update stock display in real-time
+                const stockCell = document.querySelector(`[data-product-id="${productId}"] .stock-quantity`);
+                if (stockCell) {
+                    stockCell.textContent = newStock;
+                    stockCell.classList.add('animate__animated', 'animate__pulse');
+                    setTimeout(() => {
+                        stockCell.classList.remove('animate__animated', 'animate__pulse');
+                    }, 1000);
+                }
+            }
+            
+            showNewOrderNotification(order) {
+                showNotification(`New order #${order.id} received for ${order.total}`, 'success');
+            }
+            
+            showLowStockAlert(product) {
+                showNotification(`Low stock alert: ${product.name} (${product.current_stock} ${product.unit} remaining)`, 'warning');
+            }
+            
+            updatePaymentStatus(payment) {
+                showNotification(`Payment of ${payment.amount} received`, 'success');
+            }
+            
+            reconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                        this.connect();
+                    }, 1000 * this.reconnectAttempts);
+                }
+            }
+            
+            disconnect() {
+                if (this.socket) {
+                    this.socket.close();
+                }
+            }
+        }
+        
+        // Initialize WebSocket
+        const wsManager = new WebSocketManager();
+        
+        // Start WebSocket connection when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            wsManager.connect();
+        });
+        
+        // Cleanup when page unloads
+        window.addEventListener('beforeunload', () => {
+            wsManager.disconnect();
+        });
+        
+        // Advanced Features
+        
+        // Barcode Scanner Integration
+        function initializeBarcodeScanner() {
+            if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+                // Initialize camera for barcode scanning
+                // This would integrate with a barcode scanning library
+                console.log('Barcode scanner ready');
+            }
+        }
+        
+        // Export functionality
+        function exportData(type, format = 'csv') {
+            const exportBtn = document.querySelector('.export-btn');
+            if (exportBtn) {
+                exportBtn.innerHTML = '<span class="loading-spinner"></span> Exporting...';
+                exportBtn.disabled = true;
+            }
+            
+            api.request(`/export/${type}/?format=${format}`)
+                .then(response => {
+                    // Handle file download
+                    const blob = new Blob([response.data], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showNotification('Export completed successfully!', 'success');
+                })
+                .catch(error => {
+                    showNotification('Export failed. Please try again.', 'danger');
+                })
+                .finally(() => {
+                    if (exportBtn) {
+                        exportBtn.innerHTML = '<i class="fas fa-download"></i> Export';
+                        exportBtn.disabled = false;
+                    }
+                });
+        }
+        
+        // Advanced Search with filters
+        function advancedSearch(filters) {
+            const searchParams = {
+                query: filters.query || '',
+                category: filters.category || '',
+                price_min: filters.priceMin || '',
+                price_max: filters.priceMax || '',
+                stock_status: filters.stockStatus || '',
+                date_from: filters.dateFrom || '',
+                date_to: filters.dateTo || ''
+            };
+            
+            api.getProducts(searchParams)
+                .then(products => {
+                    // Update products display
+                    updateProductsDisplay(products);
+                })
+                .catch(error => {
+                    showNotification('Search failed. Please try again.', 'danger');
+                });
+        }
+        
+        // Print functionality
+        function printReport(reportType) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${reportType} Report</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; }
+                            table { width: 100%; border-collapse: collapse; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background-color: #f2f2f2; }
+                            .header { text-align: center; margin-bottom: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>StockPro - ${reportType} Report</h1>
+                            <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        <div id="report-content">
+                            <!-- Report content will be inserted here -->
+                        </div>
+                    </body>
+                </html>
+            `);
+            
+            // Add report content and print
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+    </script>
+    
+    <!-- Vue.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
+</body>
+</html>
