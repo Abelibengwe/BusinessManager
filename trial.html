@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard - BK-Pro Business Manager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+            <p class="text-muted mb-0">Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+        </div>
+        <div class="text-end">
+            <small class="text-muted">Last updated: {{ "now"|date:"M d, Y H:i" }}</small>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card bg-primary-gradient">
+            <div class="stat-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-number">${{ total_sales|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Sales</div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card bg-success-gradient">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="stat-number">${{ daily_sales|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Today's Sales</div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card bg-warning-gradient">
+            <div class="stat-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="stat-number">{{ total_products|intcomma }}</div>
+            <div class="stat-label">Products</div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card bg-info-gradient">
+            <div class="stat-icon">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div class="stat-number">{{ active_projects|intcomma }}</div>
+            <div class="stat-label">Active Projects</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'sale_add' %}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                            <span>New Sale</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'product_add' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-box fa-2x mb-2"></i>
+                            <span>Add Product</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'stock_in_add' %}" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-warehouse fa-2x mb-2"></i>
+                            <span>Stock In</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'expense_add' %}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-receipt fa-2x mb-2"></i>
+                            <span>Add Expense</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'project_add' %}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <span>New Project</span>
+                        </a>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'reports' %}" class="btn btn-outline-dark w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                            <span>Reports</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Monthly Overview -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Monthly Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-primary">${{ monthly_sales|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Sales This Month</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-danger">${{ monthly_expenses|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Expenses This Month</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success">${{ monthly_sales|add:monthly_expenses|floatformat:0|intcomma }}</h4>
+                        <small class="text-muted">Net Profit</small>
+                    </div>
+                </div>
+                
+                <!-- Chart Container -->
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications & Alerts -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Alerts & Notifications</h5>
+                <a href="{% url 'notifications' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <!-- Low Stock Alert -->
+                {% if low_stock_count > 0 %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }} running low!</strong>
+                    <div class="mt-2">
+                        {% for product in low_stock_products %}
+                        <small class="d-block">• {{ product.name }} ({{ product.current_stock }} left)</small>
+                        {% endfor %}
+                        {% if low_stock_count > 5 %}
+                        <small class="text-muted">... and {{ low_stock_count|add:"-5" }} more</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Recent Notifications -->
+                {% for notification in notifications %}
+                <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+                    <div class="flex-shrink-0 me-3">
+                        {% if notification.notification_type == 'low_stock' %}
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        {% elif notification.notification_type == 'payment_due' %}
+                        <i class="fas fa-credit-card text-danger"></i>
+                        {% elif notification.notification_type == 'project_deadline' %}
+                        <i class="fas fa-calendar text-info"></i>
+                        {% else %}
+                        <i class="fas fa-info-circle text-primary"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ notification.title }}</h6>
+                        <p class="mb-1 small text-muted">{{ notification.message|truncatechars:80 }}</p>
+                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-check-circle fa-3x mb-3 opacity-50"></i>
+                    <p>No new notifications</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities Row -->
+<div class="row">
+    <!-- Recent Sales -->
+    <div class="col-xl-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Recent Sales</h5>
+                <a href="{% url 'sale_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td><strong>{{ sale.invoice_number }}</strong></td>
+                                <td>{{ sale.customer_name|default:"Walk-in Customer" }}</td>
+                                <td>${{ sale.total_amount|floatformat:2 }}</td>
+                                <td>{{ sale.sale_date|date:"M d" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ sale.status|yesno:'success,warning,danger' }}">
+                                        {{ sale.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h6>No recent sales</h6>
+                    <p>Start by creating your first sale!</p>
+                    <a href="{% url 'sale_add' %}" class="btn btn-primary">Create Sale</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Stock In -->
+    <div class="col-xl-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-warehouse me-2"></i>Recent Stock In</h5>
+                <a href="{% url 'stock_in_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_stock_ins %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Cost</th>
+                                <th>Date</th>
+                                <th>Supplier</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in recent_stock_ins %}
+                            <tr>
+                                <td><strong>{{ stock.product.name }}</strong></td>
+                                <td>{{ stock.quantity }} {{ stock.product.unit.symbol }}</td>
+                                <td>${{ stock.total_cost|floatformat:2 }}</td>
+                                <td>{{ stock.date_received|date:"M d" }}</td>
+                                <td>{{ stock.supplier.name|default:"N/A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-warehouse"></i>
+                    <h6>No recent stock entries</h6>
+                    <p>Add stock to track inventory!</p>
+                    <a href="{% url 'stock_in_add' %}" class="btn btn-primary">Add Stock</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Monthly Chart
+const ctx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+            label: 'Sales',
+            data: [12000, 19000, 15000, 25000, 22000, 30000, 28000, 35000, 32000, 40000, 38000, 45000],
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Expenses',
+            data: [8000, 12000, 10000, 15000, 13000, 18000, 16000, 20000, 18000, 22000, 20000, 25000],
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
