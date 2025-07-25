@@ -1,0 +1,402 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add New Sale - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sale-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .sale-form {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+    }
+    
+    .form-section {
+        padding: 2rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-light);
+    }
+    
+    .product-row {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .product-row.template {
+        display: none;
+    }
+    
+    .product-select {
+        min-width: 200px;
+    }
+    
+    .quantity-input, .price-input {
+        min-width: 100px;
+    }
+    
+    .total-section {
+        background: var(--bg-tertiary);
+        border-radius: var(--border-radius-sm);
+        padding: 1.5rem;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .total-row.grand-total {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        border-top: 2px solid var(--border-color);
+        padding-top: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-add-product {
+        background: var(--gradient-success);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius-sm);
+        font-weight: 600;
+        transition: var(--transition);
+    }
+    
+    .btn-add-product:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+        color: white;
+    }
+    
+    .btn-remove-product {
+        background: var(--gradient-danger);
+        color: white;
+        border: none;
+        padding: 0.5rem;
+        border-radius: var(--border-radius-sm);
+        transition: var(--transition);
+    }
+    
+    .btn-remove-product:hover {
+        transform: scale(1.1);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Page Header -->
+    <div class="sale-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-plus-circle me-3"></i>New Sale
+                </h1>
+                <p class="mb-0 opacity-75">Create a new sales transaction</p>
+            </div>
+            <a href="{% url 'sale_list' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Sales
+            </a>
+        </div>
+    </div>
+    
+    <!-- Sale Form -->
+    <form method="post" id="saleForm" class="sale-form">
+        {% csrf_token %}
+        
+        <!-- Customer Information -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="fas fa-user me-2"></i>Customer Information
+            </h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Customer Name">
+                        <label for="customer_name">Customer Name (Optional)</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="customer_email" name="customer_email" placeholder="Email">
+                        <label for="customer_email">Email (Optional)</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-floating mb-3">
+                        <input type="tel" class="form-control" id="customer_phone" name="customer_phone" placeholder="Phone">
+                        <label for="customer_phone">Phone (Optional)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>Products
+                </h5>
+                <button type="button" class="btn btn-add-product" onclick="addProductRow()">
+                    <i class="fas fa-plus me-2"></i>Add Product
+                </button>
+            </div>
+            
+            <div id="productsContainer">
+                <!-- Product rows will be added here -->
+            </div>
+            
+            <!-- Template for product row (hidden) -->
+            <div class="product-row template" id="productRowTemplate">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <select class="form-select product-select" name="product_id[]" onchange="updateProductPrice(this)">
+                            <option value="">Select Product</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}">
+                                {{ product.name }} (Stock: {{ product.stock_quantity }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control quantity-input" name="quantity[]" placeholder="Qty" min="1" value="1" onchange="calculateRowTotal(this)">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control price-input" name="unit_price[]" placeholder="Price" step="0.01" min="0" onchange="calculateRowTotal(this)">
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">Tsh</span>
+                            <input type="text" class="form-control row-total" readonly placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-remove-product w-100" onclick="removeProductRow(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment & Total -->
+        <div class="form-section">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="section-title">
+                        <i class="fas fa-credit-card me-2"></i>Payment Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="payment_method" name="payment_method">
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Card</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="mobile_money">Mobile Money</option>
+                                </select>
+                                <label for="payment_method">Payment Method</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <textarea class="form-control" id="notes" name="notes" placeholder="Notes" style="height: 100px"></textarea>
+                                <label for="notes">Notes (Optional)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="total-section">
+                        <h6 class="mb-3">Sale Summary</h6>
+                        
+                        <div class="total-row">
+                            <span>Subtotal:</span>
+                            <strong id="subtotalDisplay">Tsh 0.00</strong>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-floating mb-2">
+                                    <input type="number" class="form-control form-control-sm" id="discount" name="discount" placeholder="Discount" step="0.01" min="0" value="0" onchange="calculateTotals()">
+                                    <label for="discount">Discount</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-floating mb-2">
+                                    <input type="number" class="form-control form-control-sm" id="tax" name="tax" placeholder="Tax" step="0.01" min="0" value="0" onchange="calculateTotals()">
+                                    <label for="tax">Tax</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="total-row grand-total">
+                            <span>Total:</span>
+                            <strong id="grandTotalDisplay">Tsh 0.00</strong>
+                        </div>
+                        
+                        <input type="hidden" id="total_amount" name="total_amount" value="0">
+                        <input type="hidden" id="products_data" name="products">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="form-section">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'sale_list' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg" id="saveSaleBtn">
+                    <i class="fas fa-save me-2"></i>Save Sale
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let productRowCounter = 0;
+
+// Add initial product row
+document.addEventListener('DOMContentLoaded', function() {
+    addProductRow();
+});
+
+function addProductRow() {
+    const template = document.getElementById('productRowTemplate');
+    const container = document.getElementById('productsContainer');
+    const newRow = template.cloneNode(true);
+    
+    newRow.classList.remove('template');
+    newRow.id = `productRow_${++productRowCounter}`;
+    newRow.style.display = 'block';
+    
+    container.appendChild(newRow);
+    calculateTotals();
+}
+
+function removeProductRow(button) {
+    const row = button.closest('.product-row');
+    if (document.querySelectorAll('.product-row:not(.template)').length > 1) {
+        row.remove();
+        calculateTotals();
+    } else {
+        alert('At least one product is required');
+    }
+}
+
+function updateProductPrice(select) {
+    const option = select.selectedOptions[0];
+    const row = select.closest('.product-row');
+    const priceInput = row.querySelector('input[name="unit_price[]"]');
+    
+    if (option && option.dataset.price) {
+        priceInput.value = option.dataset.price;
+        calculateRowTotal(priceInput);
+    }
+}
+
+function calculateRowTotal(input) {
+    const row = input.closest('.product-row');
+    const quantity = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+    const price = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+    const total = quantity * price;
+    
+    row.querySelector('.row-total').value = total.toFixed(2);
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    
+    // Calculate subtotal from all product rows
+    document.querySelectorAll('.product-row:not(.template)').forEach(row => {
+        const rowTotal = parseFloat(row.querySelector('.row-total').value) || 0;
+        subtotal += rowTotal;
+    });
+    
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    const tax = parseFloat(document.getElementById('tax').value) || 0;
+    const grandTotal = subtotal - discount + tax;
+    
+    // Update display
+    document.getElementById('subtotalDisplay').textContent = `Tsh ${subtotal.toFixed(2)}`;
+    document.getElementById('grandTotalDisplay').textContent = `Tsh ${grandTotal.toFixed(2)}`;
+    document.getElementById('total_amount').value = grandTotal.toFixed(2);
+}
+
+// Form submission
+document.getElementById('saleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate that at least one product is selected
+    const productRows = document.querySelectorAll('.product-row:not(.template)');
+    const productsData = [];
+    let isValid = true;
+    
+    productRows.forEach(row => {
+        const productSelect = row.querySelector('select[name="product_id[]"]');
+        const quantityInput = row.querySelector('input[name="quantity[]"]');
+        const priceInput = row.querySelector('input[name="unit_price[]"]');
+        
+        if (productSelect.value && quantityInput.value && priceInput.value) {
+            productsData.push({
+                product_id: productSelect.value,
+                quantity: quantityInput.value,
+                unit_price: priceInput.value
+            });
+        } else if (productSelect.value || quantityInput.value || priceInput.value) {
+            isValid = false;
+            alert('Please complete all product information or remove incomplete rows');
+            return;
+        }
+    });
+    
+    if (productsData.length === 0) {
+        alert('Please add at least one product');
+        return;
+    }
+    
+    if (!isValid) return;
+    
+    // Set products data
+    document.getElementById('products_data').value = JSON.stringify(productsData);
+    
+    // Submit form
+    this.submit();
+});
+</script>
+{% endblock %}

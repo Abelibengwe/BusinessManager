@@ -42,17 +42,88 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    # Get current date and 30 days ago
+    # Get current date and time periods
     today = timezone.now().date()
     thirty_days_ago = today - timedelta(days=30)
+    sixty_days_ago = today - timedelta(days=60)
     
     # Basic statistics
     total_products = Product.objects.filter(is_active=True).count()
     total_sales = Sale.objects.filter(sale_date__date__gte=thirty_days_ago).count()
-    total_revenue = Sale.objects.filter(sale_date__date__gte=thirty_days_ago).aggregate(
-        total=Sum('total_amount'))['total'] or 0
+    
+    # Calculate revenue using net_amount (total_amount - discount + tax)
+    # This month's revenue
+    sales_data = Sale.objects.filter(sale_date__date__gte=thirty_days_ago)
+    total_revenue = 0
+    total_cogs = 0  # Cost of Goods Sold
+    
+    for sale in sales_data:
+        total_revenue += sale.net_amount
+        # Calculate COGS for this sale
+        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
+        for item in sale_items:
+            total_cogs += (item.product.cost_price * item.quantity)
+    
+    # Last month's revenue and COGS for comparison
+    last_month_sales = Sale.objects.filter(
+        sale_date__date__gte=sixty_days_ago,
+        sale_date__date__lt=thirty_days_ago
+    )
+    last_month_revenue = 0
+    last_month_cogs = 0
+    
+    for sale in last_month_sales:
+        last_month_revenue += sale.net_amount
+        # Calculate COGS for last month
+        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
+        for item in sale_items:
+            last_month_cogs += (item.product.cost_price * item.quantity)
+    
+    # Today's revenue and COGS
+    today_sales = Sale.objects.filter(sale_date__date=today)
+    today_revenue = 0
+    today_cogs = 0
+    
+    for sale in today_sales:
+        today_revenue += sale.net_amount
+        # Calculate today's COGS
+        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
+        for item in sale_items:
+            today_cogs += (item.product.cost_price * item.quantity)
+    
+    # Calculate total expenses
     total_expenses = Expense.objects.filter(expense_date__gte=thirty_days_ago).aggregate(
         total=Sum('amount'))['total'] or 0
+    
+    # Last month's expenses for comparison
+    last_month_expenses = Expense.objects.filter(
+        expense_date__gte=sixty_days_ago,
+        expense_date__lt=thirty_days_ago
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Calculate profit (revenue - COGS - operating expenses)
+    # Gross Profit = Revenue - COGS
+    gross_profit = total_revenue - total_cogs
+    last_month_gross_profit = last_month_revenue - last_month_cogs
+    
+    # Net Profit = Gross Profit - Operating Expenses
+    net_profit = gross_profit - total_expenses
+    last_month_net_profit = last_month_gross_profit - last_month_expenses
+    
+    # Today's profit calculations
+    today_gross_profit = today_revenue - today_cogs
+    
+    # Calculate percentage changes
+    revenue_change = 0
+    profit_change = 0
+    gross_profit_change = 0
+    
+    if last_month_revenue > 0:
+        revenue_change = ((total_revenue - last_month_revenue) / last_month_revenue) * 100
+    if last_month_net_profit != 0:
+        profit_change = ((net_profit - last_month_net_profit) / abs(last_month_net_profit)) * 100
+    if last_month_gross_profit > 0:
+        gross_profit_change = ((gross_profit - last_month_gross_profit) / last_month_gross_profit) * 100
     
     # Low stock products
     low_stock_products = Product.objects.filter(
@@ -69,12 +140,27 @@ def dashboard(request):
     # Notifications
     notifications = Notification.objects.filter(user=request.user, is_read=False)[:10]
     
+    # Calculate profit margins
+    gross_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
+    net_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
+    cogs_percentage = (total_cogs / total_revenue * 100) if total_revenue > 0 else 0
+    
     context = {
         'total_products': total_products,
         'total_sales': total_sales,
         'total_revenue': total_revenue,
+        'today_revenue': today_revenue,
         'total_expenses': total_expenses,
-        'profit': total_revenue - total_expenses,
+        'total_cogs': total_cogs,
+        'gross_profit': gross_profit,
+        'net_profit': net_profit,
+        'profit': net_profit,  # Keep for backward compatibility
+        'gross_margin': gross_margin,
+        'net_margin': net_margin,
+        'cogs_percentage': cogs_percentage,
+        'revenue_change': revenue_change,
+        'profit_change': profit_change,
+        'gross_profit_change': gross_profit_change,
         'low_stock_products': low_stock_products,
         'recent_sales': recent_sales,
         'recent_projects': recent_projects,
@@ -554,21 +640,70 @@ def dashboard_data_api(request):
 
 @login_required
 def sales_chart_api(request):
-    today = timezone.now().date()
-    days = int(request.GET.get('days', 30))
-    start_date = today - timedelta(days=days)
-    
-    sales_data = []
-    for i in range(days):
-        date = start_date + timedelta(days=i)
-        daily_sales = Sale.objects.filter(sale_date__date=date).aggregate(
-            total=Sum('total_amount'))['total'] or 0
-        sales_data.append({
-            'date': date.strftime('%Y-%m-%d'),
-            'sales': float(daily_sales)
+    try:
+        today = timezone.now().date()
+        days = int(request.GET.get('days', 30))
+        start_date = today - timedelta(days=days)
+        
+        sales_data = []
+        total_sales = 0
+        total_transactions = 0
+        
+        for i in range(days):
+            date = start_date + timedelta(days=i)
+            try:
+                daily_data = Sale.objects.filter(sale_date__date=date).aggregate(
+                    total_amount=Sum('net_amount'),
+                    transaction_count=Count('id')
+                )
+                
+                daily_amount = float(daily_data['total_amount'] or 0)
+                daily_count = daily_data['transaction_count'] or 0
+                
+                sales_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'sales': daily_amount,
+                    'transactions': daily_count
+                })
+                
+                total_sales += daily_amount
+                total_transactions += daily_count
+            except Exception as e:
+                # If there's an error with a specific date, add zero values
+                sales_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'sales': 0,
+                    'transactions': 0
+                })
+        
+        # Calculate additional statistics
+        avg_daily_sales = total_sales / days if days > 0 else 0
+        sales_amounts = [item['sales'] for item in sales_data]
+        max_daily_sales = max(sales_amounts) if sales_amounts else 0
+        
+        return JsonResponse({
+            'data': sales_data,
+            'summary': {
+                'total_sales': total_sales,
+                'total_transactions': total_transactions,
+                'avg_daily_sales': avg_daily_sales,
+                'max_daily_sales': max_daily_sales,
+                'period_days': days
+            }
         })
-    
-    return JsonResponse({'data': sales_data})
+    except Exception as e:
+        # Return error response for debugging
+        return JsonResponse({
+            'error': str(e),
+            'data': [],
+            'summary': {
+                'total_sales': 0,
+                'total_transactions': 0,
+                'avg_daily_sales': 0,
+                'max_daily_sales': 0,
+                'period_days': days
+            }
+        }, status=200)  # Return 200 to avoid triggering error handlers
 
 @login_required
 def product_search_api(request):

@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Sales - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sales-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .sales-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        text-align: center;
+        box-shadow: var(--shadow-light);
+        transition: var(--transition);
+        border: 2px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+        border-color: var(--primary-color);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    
+    .sales-table {
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+    }
+    
+    .table-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem;
+    }
+    
+    .sales-actions {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .search-box {
+        max-width: 300px;
+        flex: 1;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Page Header -->
+    <div class="sales-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-shopping-cart me-3"></i>Sales Management
+                </h1>
+                <p class="mb-0 opacity-75">Track and manage all your sales transactions</p>
+            </div>
+            <a href="{% url 'sale_add' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-plus me-2"></i>New Sale
+            </a>
+        </div>
+    </div>
+    
+    <!-- Sales Statistics -->
+    <div class="sales-stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ sales.paginator.count }}</div>
+            <div class="stat-label">Total Sales</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">Tsh 0.00</div>
+            <div class="stat-label">Today's Revenue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">Tsh 0.00</div>
+            <div class="stat-label">This Month</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Pending Orders</div>
+        </div>
+    </div>
+    
+    <!-- Sales Actions -->
+    <div class="sales-actions">
+        <div class="search-box">
+            <input type="text" class="form-control" placeholder="Search sales by customer, ID, or date..." id="salesSearch">
+        </div>
+        <div class="action-buttons">
+            <select class="form-select" id="filterStatus">
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <select class="form-select" id="filterPeriod">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Sales Table -->
+    <div class="sales-table">
+        <div class="table-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Recent Sales
+            </h5>
+        </div>
+        
+        {% if sales %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3">Sale ID</th>
+                        <th class="px-4 py-3">Customer</th>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3">Payment Method</th>
+                        <th class="px-4 py-3">Total Amount</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td class="px-4 py-3">
+                            <strong class="text-primary">#{{ sale.id }}</strong>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if sale.customer %}
+                                <div>
+                                    <strong>{{ sale.customer.name }}</strong>
+                                    {% if sale.customer.phone %}
+                                        <small class="text-muted d-block">{{ sale.customer.phone }}</small>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Walk-in Customer</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div>
+                                <strong>{{ sale.sale_date|date:"M d, Y" }}</strong>
+                                <small class="text-muted d-block">{{ sale.sale_date|time:"g:i A" }}</small>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="badge {% if sale.payment_method == 'cash' %}bg-success{% elif sale.payment_method == 'card' %}bg-primary{% elif sale.payment_method == 'bank_transfer' %}bg-info{% else %}bg-warning{% endif %}">
+                                {{ sale.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <strong class="text-success">Tsh {{ sale.net_amount|floatformat:0|intcomma }}</strong>
+                            {% if sale.discount > 0 %}
+                                <small class="text-muted d-block">Discount: Tsh {{ sale.discount|floatformat:0|intcomma }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="badge bg-success">Completed</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'sale_detail' sale.pk %}" class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-secondary" onclick="printReceipt({{ sale.id }})" title="Print Receipt">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="emailReceipt({{ sale.id }})" title="Email Receipt">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if sales.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center p-4 border-top">
+            <div class="text-muted">
+                Showing {{ sales.start_index }} to {{ sales.end_index }} of {{ sales.paginator.count }} sales
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if sales.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in sales.paginator.page_range %}
+                        {% if sales.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > sales.number|add:'-3' and num < sales.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if sales.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shopping-cart fa-4x text-muted"></i>
+            </div>
+            <h4 class="text-muted mb-3">No Sales Found</h4>
+            <p class="text-muted mb-4">You haven't made any sales yet. Start by creating your first sale!</p>
+            <a href="{% url 'sale_add' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>Create First Sale
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('salesSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Print receipt function
+function printReceipt(saleId) {
+    window.open(`/sales/${saleId}/receipt/`, '_blank');
+}
+
+// Email receipt function
+function emailReceipt(saleId) {
+    if (confirm('Send receipt via email to customer?')) {
+        fetch(`/api/sales/${saleId}/email-receipt/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Receipt sent successfully!');
+            } else {
+                alert('Error sending receipt: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error sending receipt');
+        });
+    }
+}
+</script>
+{% endblock %}

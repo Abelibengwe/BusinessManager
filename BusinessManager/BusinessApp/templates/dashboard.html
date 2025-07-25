@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Dashboard - BK-Pro Business Manager{% endblock %}
 
@@ -24,54 +25,128 @@
     <!-- Quick Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="100">
+            <div class="stat-card fade-in">
                 <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
                     <i class="fas fa-boxes"></i>
                 </div>
                 <div class="stat-value">{{ total_products|default:0 }}</div>
                 <div class="stat-label">Total Products</div>
                 <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 12% from last month
+                    <i class="fas fa-arrow-up"></i> Active inventory
                 </div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="200">
+            <div class="stat-card fade-in">
                 <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <i class="fas fa-shopping-cart"></i>
+                    <i class="fas fa-calendar-day"></i>
                 </div>
-                <div class="stat-value">{{ total_sales|default:0 }}</div>
-                <div class="stat-label">Sales This Month</div>
+                <div class="stat-value">Tsh {{ today_revenue|floatformat:0|intcomma|default:0 }}</div>
+                <div class="stat-label">Today's Revenue</div>
                 <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 8% from last month
+                    <i class="fas fa-clock"></i> Real-time updates
                 </div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="300">
+            <div class="stat-card fade-in">
                 <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                     <i class="fas fa-dollar-sign"></i>
                 </div>
-                <div class="stat-value">${{ total_revenue|floatformat:0|default:0 }}</div>
-                <div class="stat-label">Revenue</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i> 15% from last month
+                <div class="stat-value">Tsh {{ total_revenue|floatformat:0|intcomma|default:0 }}</div>
+                <div class="stat-label">Revenue (30 days)</div>
+                <div class="stat-change {% if revenue_change >= 0 %}positive{% else %}negative{% endif %}">
+                    <i class="fas fa-arrow-{% if revenue_change >= 0 %}up{% else %}down{% endif %}"></i> 
+                    {{ revenue_change|floatformat:1 }}% from last month
                 </div>
             </div>
         </div>
         
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card fade-in" data-aos="fade-up" data-aos-delay="400">
+            <div class="stat-card fade-in">
                 <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                <div class="stat-value">${{ profit|floatformat:0|default:0 }}</div>
+                <div class="stat-value">Tsh {{ profit|floatformat:0|intcomma|default:0 }}</div>
                 <div class="stat-label">Net Profit</div>
-                <div class="stat-change {% if profit >= 0 %}positive{% else %}negative{% endif %}">
-                    <i class="fas fa-arrow-{% if profit >= 0 %}up{% else %}down{% endif %}"></i> 
-                    {% if profit >= 0 %}23%{% else %}5%{% endif %} from last month
+                <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
+                    <i class="fas fa-arrow-{% if profit_change >= 0 %}up{% else %}down{% endif %}"></i> 
+                    {{ profit_change|floatformat:1 }}% from last month
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Financial Summary (Last 30 Days)
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="border-end">
+                                <h4 class="text-success">Tsh {{ total_revenue|floatformat:0|intcomma|default:0 }}</h4>
+                                <small class="text-muted">Total Revenue</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-success">100%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border-end">
+                                <h4 class="text-warning">Tsh {{ total_cogs|floatformat:0|intcomma|default:0 }}</h4>
+                                <small class="text-muted">Cost of Goods Sold</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-warning">{{ cogs_percentage|floatformat:1 }}% of Revenue</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border-end">
+                                <h4 class="text-info">Tsh {{ gross_profit|floatformat:0|intcomma|default:0 }}</h4>
+                                <small class="text-muted">Gross Profit</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-info">{{ gross_margin|floatformat:1 }}% Margin</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border-end">
+                                <h4 class="text-danger">Tsh {{ total_expenses|floatformat:0|intcomma|default:0 }}</h4>
+                                <small class="text-muted">Operating Expenses</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-danger">Operating Costs</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border-end">
+                                <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    Tsh {{ net_profit|floatformat:0|intcomma|default:0 }}
+                                </h4>
+                                <small class="text-muted">Net Profit</small>
+                                <div class="mt-1">
+                                    <span class="badge {% if net_profit >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ net_margin|floatformat:1 }}% Margin
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <h4 class="text-primary">{{ total_sales|intcomma|default:0 }}</h4>
+                            <small class="text-muted">Total Sales</small>
+                            <div class="mt-1">
+                                <span class="badge bg-primary">Transactions</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -80,25 +155,29 @@
     <!-- Charts Row -->
     <div class="row g-4 mb-4">
         <div class="col-xl-8">
-            <div class="modern-card" data-aos="fade-up" data-aos-delay="500">
+            <div class="modern-card">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Sales Overview</h5>
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Sales Overview
+                        </h5>
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-primary active" onclick="loadSalesChartData(7)">7D</button>
-                            <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(30)">30D</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(7)">7D</button>
+                            <button type="button" class="btn btn-outline-primary active" onclick="loadSalesChartData(30)">30D</button>
                             <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(90)">90D</button>
                         </div>
                     </div>
                 </div>
                 <div class="modern-card-body">
-                    <canvas id="salesChart" height="300"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="salesChart" height="300"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="col-xl-4">
-            <div class="modern-card h-100" data-aos="fade-up" data-aos-delay="600">
+            <div class="modern-card h-100">
                 <div class="modern-card-header">
                     <h5 class="mb-0">Quick Actions</h5>
                 </div>
@@ -129,7 +208,7 @@
     <div class="row g-4">
         <!-- Recent Sales -->
         <div class="col-xl-6">
-            <div class="modern-card" data-aos="fade-up" data-aos-delay="700">
+            <div class="modern-card">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Recent Sales</h5>
@@ -154,7 +233,7 @@
                                     <tr>
                                         <td><strong>#{{ sale.id }}</strong></td>
                                         <td>{{ sale.customer.name|default:"Walk-in Customer" }}</td>
-                                        <td>${{ sale.total_amount }}</td>
+                                        <td>Tsh {{ sale.net_amount|floatformat:0|intcomma }}</td>
                                         <td>{{ sale.sale_date|date:"M d, Y" }}</td>
                                         <td><span class="badge badge-success">Completed</span></td>
                                     </tr>
@@ -177,7 +256,7 @@
 
         <!-- Low Stock Alerts -->
         <div class="col-xl-6">
-            <div class="modern-card" data-aos="fade-up" data-aos-delay="800">
+            <div class="modern-card">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Low Stock Alerts</h5>
@@ -217,7 +296,7 @@
     {% if recent_projects %}
     <div class="row g-4 mt-2">
         <div class="col-12">
-            <div class="modern-card" data-aos="fade-up" data-aos-delay="900">
+            <div class="modern-card">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Active Projects</h5>
@@ -241,7 +320,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="badge badge-{{ project.status|lower }}">{{ project.get_status_display }}</span>
-                                        <small class="text-muted">${{ project.budget }}</small>
+                                        <small class="text-muted">Tsh {{ project.budget }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -256,6 +335,18 @@
 </div>
 
 <style>
+/* Ensure dashboard content is visible */
+.dashboard-container {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.stat-card, .modern-card {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+}
+
 .search-results {
     position: absolute;
     top: 100%;
@@ -313,6 +404,57 @@
 .badge-completed { background-color: var(--success-color); }
 .badge-on_hold { background-color: var(--secondary-color); }
 .badge-cancelled { background-color: var(--danger-color); }
+
+/* Chart Enhancements */
+.chart-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.chart-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.chart-stats {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.chart-stats .stat-item {
+    padding: 0.5rem;
+}
+
+.chart-stats .stat-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.btn-group .btn.active {
+    background-color: var(--primary-color, #6366f1);
+    border-color: var(--primary-color, #6366f1);
+    color: white;
+}
 </style>
 
 {% endblock %}
@@ -320,10 +462,48 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Initialize dashboard components
+    // Debug: Check if elements exist
+    console.log('Dashboard elements:', {
+        chartCanvas: $('#salesChart').length,
+        totalProducts: '{{ total_products }}',
+        totalRevenue: '{{ total_revenue }}',
+        todayRevenue: '{{ today_revenue }}',
+        profit: '{{ profit }}'
+    });
+    
+    // Always create a fresh chart to avoid data structure issues
     if ($('#salesChart').length) {
-        createSalesChart();
+        console.log('Creating fresh sales chart...');
+        // Clear any existing chart
+        if (window.salesChart) {
+            console.log('Destroying existing chart for fresh creation');
+            try {
+                if (typeof window.salesChart.destroy === 'function') {
+                    window.salesChart.destroy();
+                } else {
+                    console.log('Chart destroy method not available, setting to null');
+                }
+            } catch (e) {
+                console.log('Error destroying chart:', e);
+            }
+            window.salesChart = null;
+        }
+        
+        try {
+            createSalesChart();
+        } catch (error) {
+            console.error('Error creating sales chart:', error);
+        }
+    } else {
+        console.log('Sales chart canvas not found');
     }
+    
+    // Set default active period to 30 days after chart is created
+    setTimeout(function() {
+        $('.btn-group .btn').removeClass('active');
+        $('.btn-group .btn[onclick="loadSalesChartData(30)"]').addClass('active');
+        console.log('Set default chart period to 30 days');
+    }, 1000);
 });
 </script>
 {% endblock %}
