@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Electronics Device{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">
+            <i class="fas fa-microchip text-info"></i>
+            Edit Electronics Device
+        </h2>
+        <a href="{% url 'electronics_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Device Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Device Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ device.name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="device_type" class="form-label">Device Type</label>
+                                <select class="form-select" id="device_type" name="device_type">
+                                    {% for value, display in device_types %}
+                                        <option value="{{ value }}" {% if value == device.device_type %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="model_number" class="form-label">Model Number</label>
+                                <input type="text" class="form-control" id="model_number" name="model_number" value="{{ device.model_number }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="serial_number" class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number" value="{{ device.serial_number }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="manufacturer" class="form-label">Manufacturer</label>
+                                <input type="text" class="form-control" id="manufacturer" name="manufacturer" value="{{ device.manufacturer }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="operating_system" class="form-label">Operating System</label>
+                                <input type="text" class="form-control" id="operating_system" name="operating_system" 
+                                       value="{{ device.operating_system }}" placeholder="e.g. Windows 11, macOS, Android">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="specifications" class="form-label">Specifications</label>
+                            <textarea class="form-control" id="specifications" name="specifications" rows="3" 
+                                      placeholder="Technical specifications (CPU, RAM, Storage, etc.)">{{ device.specifications }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       value="{{ device.location }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assigned_to" class="form-label">Assigned To</label>
+                                <input type="text" class="form-control" id="assigned_to" name="assigned_to" 
+                                       value="{{ device.assigned_to }}" placeholder="Person or department">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    {% for value, display in status_choices %}
+                                        <option value="{{ value }}" {% if value == device.status %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    {% for value, display in priority_choices %}
+                                        <option value="{{ value }}" {% if value == device.priority %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="maintenance_cost" class="form-label">Maintenance Cost (Tsh)</label>
+                                <input type="number" class="form-control" id="maintenance_cost" name="maintenance_cost" 
+                                       min="0" step="0.01" value="{{ device.maintenance_cost }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="purchase_date" class="form-label">Purchase Date</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date" 
+                                       value="{% if device.purchase_date %}{{ device.purchase_date|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="warranty_expiry" class="form-label">Warranty Expiry</label>
+                                <input type="date" class="form-control" id="warranty_expiry" name="warranty_expiry" 
+                                       value="{% if device.warranty_expiry %}{{ device.warranty_expiry|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="last_maintenance" class="form-label">Last Maintenance</label>
+                                <input type="date" class="form-control" id="last_maintenance" name="last_maintenance" 
+                                       value="{% if device.last_maintenance %}{{ device.last_maintenance|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="next_maintenance" class="form-label">Next Maintenance</label>
+                                <input type="date" class="form-control" id="next_maintenance" name="next_maintenance" 
+                                       value="{% if device.next_maintenance %}{{ device.next_maintenance|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                      placeholder="Additional notes about the device...">{{ device.description }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'electronics_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Device
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Device Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-microchip fa-2x text-primary"></i>
+                    </div>
+                    <h6 class="text-center mb-3">{{ device.name }}</h6>
+                    <div class="mb-2">
+                        <strong>Type:</strong> {{ device.get_device_type_display }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Created:</strong> {{ device.created_at|date:"M d, Y" }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Last Updated:</strong> {{ device.updated_at|date:"M d, Y H:i" }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Created By:</strong> {{ device.created_by.get_full_name|default:device.created_by.username }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Current Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><strong>Status:</strong></span>
+                            <span>
+                                {% if device.status == 'working' %}
+                                    <span class="badge bg-success">Working</span>
+                                {% elif device.status == 'maintenance' %}
+                                    <span class="badge bg-warning">Maintenance</span>
+                                {% elif device.status == 'repair' %}
+                                    <span class="badge bg-danger">Needs Repair</span>
+                                {% elif device.status == 'damaged' %}
+                                    <span class="badge bg-dark">Damaged</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Retired</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><strong>Priority:</strong></span>
+                            <span>
+                                {% if device.priority == 'critical' %}
+                                    <span class="badge bg-danger">Critical</span>
+                                {% elif device.priority == 'high' %}
+                                    <span class="badge bg-warning">High</span>
+                                {% elif device.priority == 'medium' %}
+                                    <span class="badge bg-info">Medium</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Low</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    {% if device.is_due_maintenance %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Maintenance Due!</strong><br>
+                            This device is due for maintenance.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Up to Date</strong><br>
+                            Maintenance schedule is current.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Quick Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-user text-info me-2"></i>
+                            <small>Keep assignment information updated</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-cogs text-warning me-2"></i>
+                            <small>Update specifications after upgrades</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-success me-2"></i>
+                            <small>Schedule regular maintenance</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                            <small>Update location when devices are moved</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

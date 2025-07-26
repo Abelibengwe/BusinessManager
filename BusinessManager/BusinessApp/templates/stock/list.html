@@ -1,0 +1,730 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Stock Management - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stock-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .stock-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        border-left: 4px solid;
+        transition: all var(--transition-speed);
+        margin-bottom: 1rem;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card.total-products { border-left-color: var(--primary-color); }
+    .stats-card.low-stock { border-left-color: #dc3545; }
+    .stats-card.out-of-stock { border-left-color: #6c757d; }
+    .stats-card.recent-movements { border-left-color: #28a745; }
+    
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        margin: 0;
+    }
+    
+    .product-row {
+        transition: background-color var(--transition-speed);
+        cursor: pointer;
+    }
+    
+    .product-row:hover {
+        background-color: rgba(102, 126, 234, 0.05);
+    }
+    
+    .stock-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 80px;
+    }
+    
+    .stock-in-stock { background-color: #d4edda; color: #155724; }
+    .stock-low { background-color: #fff3cd; color: #856404; }
+    .stock-out { background-color: #f8d7da; color: #721c24; }
+    
+    .movement-form {
+        background: #f8f9fa;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .movement-type-btn {
+        min-width: 100px;
+    }
+    
+    .recent-movements {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .movement-item {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        transition: background-color var(--transition-speed);
+    }
+    
+    .movement-item:hover {
+        background-color: rgba(102, 126, 234, 0.05);
+    }
+    
+    .movement-item:last-child {
+        border-bottom: none;
+    }
+    
+    .movement-in { border-left: 3px solid #28a745; }
+    .movement-out { border-left: 3px solid #dc3545; }
+    .movement-adjustment { border-left: 3px solid #17a2b8; }
+    
+    .quantity-input {
+        max-width: 100px;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
+    .search-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stock-container">
+    <!-- Stock Header -->
+    <div class="stock-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-2">
+                    <i class="fas fa-boxes me-3"></i>Stock Management
+                </h1>
+                <p class="mb-0 opacity-75">Monitor inventory levels and manage stock movements</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#stockMovementModal">
+                    <i class="fas fa-plus me-2"></i>Record Movement
+                </button>
+                <a href="{% url 'product_add' %}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-box me-2"></i>Add Product
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stats-card total-products">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: var(--primary-color);">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold text-primary">{{ products.count }}</div>
+                        <div class="text-muted small">Total Products</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="stats-card low-stock">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #dc3545;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="ms-3">
+                        {% with low_stock_count=products|dictsort:"stock_quantity"|dictsort:"min_stock_level" %}
+                        <div class="fs-4 fw-bold text-danger">
+                            {% for product in products %}
+                                {% if product.stock_quantity <= product.min_stock_level %}{{ forloop.counter }}{% endif %}
+                            {% empty %}0{% endfor %}
+                        </div>
+                        {% endwith %}
+                        <div class="text-muted small">Low Stock Items</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="stats-card out-of-stock">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #6c757d;">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold text-secondary">
+                            {% for product in products %}
+                                {% if product.stock_quantity == 0 %}{{ forloop.counter }}{% endif %}
+                            {% empty %}0{% endfor %}
+                        </div>
+                        <div class="text-muted small">Out of Stock</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="stats-card recent-movements">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #28a745;">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold text-success">{{ stock_movements.count }}</div>
+                        <div class="text-muted small">Recent Movements</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Products Stock List -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Product Inventory
+                        <span class="ms-2 badge bg-light text-dark">{{ products.count }} products</span>
+                    </h4>
+                </div>
+                
+                <!-- Search Section -->
+                <div class="p-3 border-bottom">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="productSearch" 
+                                       placeholder="Search products by name or SKU...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="stockFilter">
+                                <option value="">All Stock Levels</option>
+                                <option value="in_stock">In Stock</option>
+                                <option value="low_stock">Low Stock</option>
+                                <option value="out_of_stock">Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="categoryFilter">
+                                <option value="">All Categories</option>
+                                {% for product in products %}
+                                    {% if product.category %}
+                                        <option value="{{ product.category.name }}">{{ product.category.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if products %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="productsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Current Stock</th>
+                                    <th>Min Level</th>
+                                    <th>Status</th>
+                                    <th>Value</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr class="product-row" data-product-name="{{ product.name|lower }}" 
+                                    data-product-sku="{{ product.sku|lower }}" 
+                                    data-category="{{ product.category.name|default:'uncategorized'|lower }}">
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold text-primary">{{ product.name }}</div>
+                                            <div class="text-muted small">SKU: {{ product.sku }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if product.category %}
+                                            <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Uncategorized</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold fs-5">{{ product.stock_quantity }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-muted">{{ product.min_stock_level }}</div>
+                                    </td>
+                                    <td>
+                                        {% if product.stock_quantity == 0 %}
+                                            <span class="stock-badge stock-out">Out of Stock</span>
+                                        {% elif product.stock_quantity <= product.min_stock_level %}
+                                            <span class="stock-badge stock-low">Low Stock</span>
+                                        {% else %}
+                                            <span class="stock-badge stock-in-stock">In Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-success">
+                                            Tsh {{ product.stock_value|floatformat:2|intcomma }}
+                                        </div>
+                                        <div class="text-muted small">@ Tsh {{ product.cost_price|floatformat:2|intcomma }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    title="Stock In" onclick="quickStockMovement({{ product.id }}, 'in', '{{ product.name|escapejs }}')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    title="Stock Out" onclick="quickStockMovement({{ product.id }}, 'out', '{{ product.name|escapejs }}')">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    title="Adjust Stock" onclick="quickStockMovement({{ product.id }}, 'adjustment', '{{ product.name|escapejs }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{% url 'product_edit' product.id %}" 
+                                               class="btn btn-sm btn-outline-secondary" title="Edit Product">
+                                                <i class="fas fa-cog"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-boxes"></i>
+                        <h4>No Products Found</h4>
+                        <p class="mb-4">You haven't added any products to your inventory yet.</p>
+                        <a href="{% url 'product_add' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Add Your First Product
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Recent Stock Movements -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Movements
+                    </h5>
+                </div>
+                
+                <div class="recent-movements">
+                    {% if stock_movements %}
+                        {% for movement in stock_movements %}
+                        <div class="movement-item movement-{{ movement.movement_type }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ movement.product.name }}</div>
+                                    <div class="text-muted small">{{ movement.reason }}</div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-user me-1"></i>{{ movement.created_by.username }}
+                                        <span class="ms-2">
+                                            <i class="fas fa-clock me-1"></i>{{ movement.created_at|date:"M d, H:i" }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold 
+                                        {% if movement.movement_type == 'in' %}text-success
+                                        {% elif movement.movement_type == 'out' %}text-danger
+                                        {% else %}text-info{% endif %}">
+                                        {% if movement.movement_type == 'in' %}+{% elif movement.movement_type == 'out' %}-{% endif %}{{ movement.abs_quantity }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        {% if movement.movement_type == 'in' %}Stock In
+                                        {% elif movement.movement_type == 'out' %}Stock Out
+                                        {% else %}Adjustment{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No Recent Movements</h6>
+                            <p class="text-muted small mb-0">Stock movements will appear here once you start recording them.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                
+                <div class="p-3">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#stockMovementModal">
+                            <i class="fas fa-plus me-2"></i>Record Stock Movement
+                        </button>
+                        <a href="{% url 'product_add' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-box me-2"></i>Add New Product
+                        </a>
+                        <button type="button" class="btn btn-outline-warning" onclick="showLowStockItems()">
+                            <i class="fas fa-exclamation-triangle me-2"></i>View Low Stock Items
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="exportStockReport()">
+                            <i class="fas fa-download me-2"></i>Export Stock Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Movement Modal -->
+<div class="modal fade" id="stockMovementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exchange-alt me-2"></i>Record Stock Movement
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'stock_movement' %}" id="stockMovementForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">
+                            Product <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="">Select a product...</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}" data-current-stock="{{ product.stock_quantity }}">
+                                    {{ product.name }} (SKU: {{ product.sku }}) - Current: {{ product.stock_quantity }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Movement Type <span class="text-danger">*</span>
+                        </label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="movement_type" id="type_in" value="in" required>
+                            <label class="btn btn-outline-success movement-type-btn" for="type_in">
+                                <i class="fas fa-plus me-1"></i>Stock In
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="movement_type" id="type_out" value="out" required>
+                            <label class="btn btn-outline-danger movement-type-btn" for="type_out">
+                                <i class="fas fa-minus me-1"></i>Stock Out
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="movement_type" id="type_adjustment" value="adjustment" required>
+                            <label class="btn btn-outline-info movement-type-btn" for="type_adjustment">
+                                <i class="fas fa-edit me-1"></i>Adjustment
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">
+                            Quantity <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        <div class="form-text" id="quantityHelp"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">
+                            Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                  placeholder="Enter the reason for this stock movement..." required></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Stock movements will be recorded immediately and cannot be undone. 
+                        Please ensure the information is accurate before submitting.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Record Movement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Movement Modal -->
+<div class="modal fade" id="quickMovementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="quickMovementTitle">
+                    <i class="fas fa-bolt me-2"></i>Quick Stock Movement
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'stock_movement' %}" id="quickMovementForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" id="quick_product_id" name="product_id">
+                    <input type="hidden" id="quick_movement_type" name="movement_type">
+                    
+                    <div class="alert alert-info">
+                        <h6 id="quickProductName" class="mb-2"></h6>
+                        <div id="quickMovementDescription"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quick_quantity" class="form-label">
+                            Quantity <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="quick_quantity" name="quantity" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quick_reason" class="form-label">
+                            Reason <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="quick_reason" name="reason" 
+                               placeholder="Enter reason for this movement..." required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="quickSubmitBtn">
+                        <i class="fas fa-save me-2"></i>Record Movement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search and filter functionality
+document.getElementById('productSearch').addEventListener('input', function() {
+    filterProducts();
+});
+
+document.getElementById('stockFilter').addEventListener('change', function() {
+    filterProducts();
+});
+
+document.getElementById('categoryFilter').addEventListener('change', function() {
+    filterProducts();
+});
+
+function filterProducts() {
+    const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+    const stockFilter = document.getElementById('stockFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('#productsTable tbody tr');
+    
+    rows.forEach(row => {
+        const productName = row.dataset.productName;
+        const productSku = row.dataset.productSku;
+        const category = row.dataset.category;
+        
+        // Text search
+        const matchesSearch = !searchTerm || 
+            productName.includes(searchTerm) || 
+            productSku.includes(searchTerm);
+        
+        // Category filter
+        const matchesCategory = !categoryFilter || category === categoryFilter;
+        
+        // Stock filter
+        let matchesStock = true;
+        if (stockFilter) {
+            const stockBadge = row.querySelector('.stock-badge');
+            if (stockFilter === 'in_stock' && !stockBadge.classList.contains('stock-in-stock')) {
+                matchesStock = false;
+            } else if (stockFilter === 'low_stock' && !stockBadge.classList.contains('stock-low')) {
+                matchesStock = false;
+            } else if (stockFilter === 'out_of_stock' && !stockBadge.classList.contains('stock-out')) {
+                matchesStock = false;
+            }
+        }
+        
+        if (matchesSearch && matchesCategory && matchesStock) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Quick stock movement
+function quickStockMovement(productId, movementType, productName) {
+    document.getElementById('quick_product_id').value = productId;
+    document.getElementById('quick_movement_type').value = movementType;
+    document.getElementById('quickProductName').textContent = productName;
+    
+    const modal = document.getElementById('quickMovementModal');
+    const title = document.getElementById('quickMovementTitle');
+    const description = document.getElementById('quickMovementDescription');
+    const submitBtn = document.getElementById('quickSubmitBtn');
+    
+    if (movementType === 'in') {
+        title.innerHTML = '<i class="fas fa-plus me-2"></i>Quick Stock In';
+        description.textContent = 'Add items to inventory';
+        submitBtn.className = 'btn btn-success';
+        submitBtn.innerHTML = '<i class="fas fa-plus me-2"></i>Add Stock';
+    } else if (movementType === 'out') {
+        title.innerHTML = '<i class="fas fa-minus me-2"></i>Quick Stock Out';
+        description.textContent = 'Remove items from inventory';
+        submitBtn.className = 'btn btn-danger';
+        submitBtn.innerHTML = '<i class="fas fa-minus me-2"></i>Remove Stock';
+    } else {
+        title.innerHTML = '<i class="fas fa-edit me-2"></i>Quick Stock Adjustment';
+        description.textContent = 'Adjust stock quantity to specified amount';
+        submitBtn.className = 'btn btn-info';
+        submitBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Adjust Stock';
+    }
+    
+    const quickModal = new bootstrap.Modal(modal);
+    quickModal.show();
+}
+
+// Show low stock items
+function showLowStockItems() {
+    document.getElementById('stockFilter').value = 'low_stock';
+    filterProducts();
+    
+    // Scroll to products table
+    document.querySelector('#productsTable').scrollIntoView({
+        behavior: 'smooth'
+    });
+}
+
+// Export stock report (placeholder)
+function exportStockReport() {
+    alert('Stock report export feature will be implemented in the next update.');
+}
+
+// Update quantity help text based on movement type
+document.querySelectorAll('input[name="movement_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const quantityHelp = document.getElementById('quantityHelp');
+        const productSelect = document.getElementById('product_id');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        
+        if (selectedOption && selectedOption.dataset.currentStock) {
+            const currentStock = selectedOption.dataset.currentStock;
+            
+            if (this.value === 'in') {
+                quantityHelp.textContent = `Current stock: ${currentStock}. Enter quantity to add.`;
+            } else if (this.value === 'out') {
+                quantityHelp.textContent = `Current stock: ${currentStock}. Enter quantity to remove.`;
+            } else {
+                quantityHelp.textContent = `Current stock: ${currentStock}. Enter new total quantity.`;
+            }
+        }
+    });
+});
+
+// Update help text when product changes
+document.getElementById('product_id').addEventListener('change', function() {
+    const selectedMovementType = document.querySelector('input[name="movement_type"]:checked');
+    if (selectedMovementType) {
+        selectedMovementType.dispatchEvent(new Event('change'));
+    }
+});
+
+// Clear form when modal is hidden
+document.getElementById('stockMovementModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('stockMovementForm').reset();
+    document.getElementById('quantityHelp').textContent = '';
+});
+
+document.getElementById('quickMovementModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('quickMovementForm').reset();
+});
+</script>
+{% endblock %}

@@ -48,18 +48,19 @@
             
             <!-- Collapsible content -->
             <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Main Navigation - Hidden on mobile, shown in sidebar -->
-                <ul class="navbar-nav me-auto d-none d-xl-flex">
+                <!-- Main Navigation - Responsive breakpoint adjusted -->
+                <ul class="navbar-nav me-auto d-none d-lg-flex">
                     <li class="nav-item">
                         <a class="nav-link modern-nav-link nav-dashboard {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
-                           href="{% url 'dashboard' %}">
+                           href="{% url 'dashboard' %}" title="Dashboard">
                             <i class="fas fa-chart-line"></i>
                             <span>Dashboard</span>
                         </a>
                     </li>
                     
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle modern-nav-link nav-inventory" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle modern-nav-link nav-inventory {% if 'product' in request.resolver_match.url_name or 'stock' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="#" role="button" data-bs-toggle="dropdown" title="Inventory">
                             <i class="fas fa-boxes"></i>
                             <span>Inventory</span>
                         </a>
@@ -70,12 +71,16 @@
                             <li><a class="dropdown-item modern-dropdown-item" href="{% url 'product_add' %}">
                                 <i class="fas fa-plus-circle"></i>Add Product
                             </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'stock_in_list' %}">
+                                <i class="fas fa-warehouse"></i>Stock Management
+                            </a></li>
                         </ul>
                     </li>
                     
                     <li class="nav-item">
                         <a class="nav-link modern-nav-link nav-sales {% if 'sale' in request.resolver_match.url_name %}active{% endif %}" 
-                           href="{% url 'sale_list' %}">
+                           href="{% url 'sale_list' %}" title="Sales">
                             <i class="fas fa-shopping-cart"></i>
                             <span>Sales</span>
                         </a>
@@ -83,32 +88,45 @@
                     
                     <li class="nav-item">
                         <a class="nav-link modern-nav-link nav-expenses {% if 'expense' in request.resolver_match.url_name %}active{% endif %}" 
-                           href="{% url 'expense_list' %}">
+                           href="{% url 'expense_list' %}" title="Expenses">
                             <i class="fas fa-credit-card"></i>
                             <span>Expenses</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle modern-nav-link nav-services {% if 'project' in request.resolver_match.url_name or 'electrical' in request.resolver_match.url_name or 'electronics' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="#" role="button" data-bs-toggle="dropdown" title="Services">
+                            <i class="fas fa-tools"></i>
+                            <span>Services</span>
+                        </a>
+                        <ul class="dropdown-menu modern-dropdown">
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'project_list' %}">
+                                <i class="fas fa-project-diagram"></i>Projects
+                            </a></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'electrical_list' %}">
+                                <i class="fas fa-bolt"></i>Electrical Maintenance
+                            </a></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'electronics_list' %}">
+                                <i class="fas fa-microchip"></i>Electronics Maintenance
+                            </a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link modern-nav-link nav-reports {% if 'reports' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'reports' %}" title="Reports">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Reports</span>
                         </a>
                     </li>
                 </ul>
                 
                 <!-- Right side items -->
-                <ul class="navbar-nav ms-auto">
-                    <!-- Search Toggle - Hidden on small screens -->
-                    <li class="nav-item me-2 d-none d-md-block">
-                        <div class="search-container">
-                            <button class="search-toggle" id="searchToggle" type="button">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <div class="search-field" id="searchField">
-                                <input type="text" class="search-input" placeholder="Search products, sales..." id="productSearch">
-                                <i class="fas fa-search search-icon-field"></i>
-                                <div id="searchResults" class="search-results" style="display: none;"></div>
-                            </div>
-                        </div>
-                    </li>
-                    
+                <ul class="navbar-nav ms-auto align-items-center">
                     <!-- Notifications -->
                     <li class="nav-item dropdown me-2">
-                        <a class="nav-link notification-bell position-relative p-2" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link notification-bell position-relative p-2" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                             <i class="fas fa-bell"></i>
                             {% if notifications %}
                             <span class="notification-badge">{{ notifications.count }}</span>
@@ -147,7 +165,7 @@
                     
                     <!-- User Profile -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link user-profile p-2" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link user-profile p-2" href="#" role="button" data-bs-toggle="dropdown" title="{{ user.get_full_name|default:user.username }}">
                             <div class="user-avatar">
                                 <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=2563eb&color=fff&size=32" alt="Avatar">
                             </div>
@@ -222,6 +240,24 @@
                         <a href="{% url 'project_list' %}" class="nav-link nav-projects">
                             <i class="fas fa-project-diagram nav-icon"></i>
                             <span class="nav-text">Projects</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'electrical_list' %}" class="nav-link nav-electrical">
+                            <i class="fas fa-bolt nav-icon"></i>
+                            <span class="nav-text">Electrical</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'electronics_list' %}" class="nav-link nav-electronics">
+                            <i class="fas fa-microchip nav-icon"></i>
+                            <span class="nav-text">Electronics</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'stock_in_list' %}" class="nav-link nav-stock">
+                            <i class="fas fa-warehouse nav-icon"></i>
+                            <span class="nav-text">Stock</span>
                         </a>
                     </li>
                     <li class="nav-item">

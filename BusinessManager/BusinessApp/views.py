@@ -13,7 +13,8 @@ import json
 from .models import (
     Product, Sale, SaleItem, Expense, Project, 
     StockMovement, Notification, Category, 
-    ExpenseCategory, Customer, Supplier
+    ExpenseCategory, Customer, Supplier,
+    ElectricalDevice, ElectronicsDevice
 )
 
 # Create your views here.
@@ -283,14 +284,51 @@ def product_delete(request, pk):
 
 @login_required
 def sale_list(request):
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    
     sales = Sale.objects.select_related('customer', 'created_by').order_by('-created_at')
+    
+    # Calculate statistics
+    now = timezone.now()
+    today = now.date()
+    current_month_start = today.replace(day=1)
+    
+    # Today's revenue
+    today_revenue = Sale.objects.filter(
+        sale_date__date=today
+    ).aggregate(
+        total=Sum('total_amount')
+    )['total'] or 0
+    
+    # This month's revenue
+    month_revenue = Sale.objects.filter(
+        sale_date__date__gte=current_month_start
+    ).aggregate(
+        total=Sum('total_amount')
+    )['total'] or 0
+    
+    # Total sales count
+    total_sales = sales.count()
+    
+    # Pending orders (assuming we might add status field later, for now show 0)
+    pending_orders = 0
     
     # Pagination
     paginator = Paginator(sales, 20)
     page_number = request.GET.get('page')
-    sales = paginator.get_page(page_number)
+    sales_page = paginator.get_page(page_number)
     
-    return render(request, 'sales/list.html', {'sales': sales})
+    context = {
+        'sales': sales_page,
+        'today_revenue': today_revenue,
+        'month_revenue': month_revenue,
+        'total_sales': total_sales,
+        'pending_orders': pending_orders,
+    }
+    
+    return render(request, 'sales/list.html', context)
 
 @login_required
 def sale_add(request):
@@ -370,12 +408,58 @@ def sale_detail(request, pk):
 def expense_list(request):
     expenses = Expense.objects.select_related('category', 'created_by').order_by('-created_at')
     
+    # Calculate statistics
+    now = timezone.now()
+    today = now.date()
+    current_month_start = today.replace(day=1)
+    current_year_start = today.replace(month=1, day=1)
+    
+    # Today's expenses
+    today_expenses = Expense.objects.filter(
+        expense_date=today
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # This month's expenses
+    month_expenses = Expense.objects.filter(
+        expense_date__gte=current_month_start
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # This year's expenses
+    year_expenses = Expense.objects.filter(
+        expense_date__gte=current_year_start
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Total expense count
+    total_expenses_count = expenses.count()
+    
+    # Expenses by category (top 5)
+    category_expenses = Expense.objects.filter(
+        expense_date__gte=current_month_start
+    ).values('category__name').annotate(
+        total=Sum('amount')
+    ).order_by('-total')[:5]
+    
     # Pagination
     paginator = Paginator(expenses, 20)
     page_number = request.GET.get('page')
-    expenses = paginator.get_page(page_number)
+    expenses_page = paginator.get_page(page_number)
     
-    return render(request, 'expenses/list.html', {'expenses': expenses})
+    context = {
+        'expenses': expenses_page,
+        'today_expenses': today_expenses,
+        'month_expenses': month_expenses,
+        'year_expenses': year_expenses,
+        'total_expenses_count': total_expenses_count,
+        'category_expenses': category_expenses,
+    }
+    
+    return render(request, 'expenses/list.html', context)
 
 @login_required
 def expense_add(request):
@@ -401,7 +485,11 @@ def expense_add(request):
             messages.error(request, f'Error adding expense: {str(e)}')
     
     categories = ExpenseCategory.objects.all()
-    return render(request, 'expenses/add.html', {'categories': categories})
+    today = timezone.now().date()
+    return render(request, 'expenses/add.html', {
+        'categories': categories,
+        'today': today
+    })
 
 @login_required
 def expense_edit(request, pk):
@@ -446,12 +534,53 @@ def expense_delete(request, pk):
 def project_list(request):
     projects = Project.objects.select_related('created_by').order_by('-created_at')
     
+    # Search and filter functionality
+    search_query = request.GET.get('search')
+    status_filter = request.GET.get('status')
+    sort_by = request.GET.get('sort', 'name')
+    
+    if search_query:
+        projects = projects.filter(
+            Q(name__icontains=search_query) |
+            Q(client__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+    
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+    
+    # Sorting
+    if sort_by == 'client':
+        projects = projects.order_by('client')
+    elif sort_by == 'start_date':
+        projects = projects.order_by('-start_date')
+    elif sort_by == 'budget':
+        projects = projects.order_by('-budget')
+    elif sort_by == 'progress':
+        projects = projects.order_by('-progress')
+    else:  # default to name
+        projects = projects.order_by('name')
+    
+    # Calculate statistics
+    all_projects = Project.objects.all()
+    stats = {
+        'total_projects': all_projects.count(),
+        'planning_projects': all_projects.filter(status='planning').count(),
+        'in_progress_projects': all_projects.filter(status='in_progress').count(),
+        'completed_projects': all_projects.filter(status='completed').count(),
+        'on_hold_projects': all_projects.filter(status='on_hold').count(),
+        'total_budget': all_projects.aggregate(total=Sum('budget'))['total'] or 0,
+    }
+    
     # Pagination
     paginator = Paginator(projects, 20)
     page_number = request.GET.get('page')
-    projects = paginator.get_page(page_number)
+    projects_page = paginator.get_page(page_number)
     
-    return render(request, 'projects/list.html', {'projects': projects})
+    return render(request, 'projects/list.html', {
+        'projects': projects_page,
+        'stats': stats
+    })
 
 @login_required
 def project_add(request):
@@ -515,11 +644,24 @@ def project_delete(request, pk):
 @login_required
 def stock_in_list(request):
     products = Product.objects.filter(is_active=True).select_related('category')
+    
+    # Calculate stock values for each product
+    products_with_values = []
+    for product in products:
+        product.stock_value = product.stock_quantity * product.cost_price
+        products_with_values.append(product)
+    
     stock_movements = StockMovement.objects.select_related('product', 'created_by').order_by('-created_at')[:20]
     
+    # Calculate absolute quantity for each movement
+    movements_with_abs = []
+    for movement in stock_movements:
+        movement.abs_quantity = abs(movement.quantity)
+        movements_with_abs.append(movement)
+    
     return render(request, 'stock/list.html', {
-        'products': products,
-        'stock_movements': stock_movements
+        'products': products_with_values,
+        'stock_movements': movements_with_abs
     })
 
 @login_required
@@ -560,36 +702,160 @@ def stock_movement(request):
 
 @login_required
 def reports(request):
-    # Date range (last 30 days by default)
+    # Date range (last 30 days by default, but can be customized)
     today = timezone.now().date()
-    thirty_days_ago = today - timedelta(days=30)
+    days_back = int(request.GET.get('days', 30))
+    start_date = today - timedelta(days=days_back)
+    
+    # Also get comparison period (previous same period)
+    comparison_start = start_date - timedelta(days=days_back)
+    comparison_end = start_date
     
     # Sales analytics
-    sales_data = Sale.objects.filter(sale_date__date__gte=thirty_days_ago)
+    sales_data = Sale.objects.filter(sale_date__date__gte=start_date)
     total_sales = sales_data.count()
-    total_revenue = sales_data.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_revenue = 0
+    total_cost = 0
+    
+    # Calculate revenue and cost for current period
+    for sale in sales_data:
+        total_revenue += sale.net_amount
+        # Calculate cost of goods sold for this sale
+        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
+        for item in sale_items:
+            total_cost += (item.product.cost_price * item.quantity)
+    
+    # Comparison period sales
+    comparison_sales_data = Sale.objects.filter(
+        sale_date__date__gte=comparison_start,
+        sale_date__date__lt=comparison_end
+    )
+    comparison_sales = comparison_sales_data.count()
+    comparison_revenue = 0
+    for sale in comparison_sales_data:
+        comparison_revenue += sale.net_amount
     
     # Expense analytics
-    expense_data = Expense.objects.filter(expense_date__gte=thirty_days_ago)
+    expense_data = Expense.objects.filter(expense_date__gte=start_date)
     total_expenses = expense_data.aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Comparison expenses
+    comparison_expenses = Expense.objects.filter(
+        expense_date__gte=comparison_start,
+        expense_date__lt=comparison_end
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Calculate profits
+    gross_profit = total_revenue - total_cost
+    net_profit = gross_profit - total_expenses
+    comparison_net_profit = comparison_revenue - comparison_expenses
+    
+    # Calculate percentage changes
+    sales_change = 0
+    revenue_change = 0
+    expense_change = 0
+    profit_change = 0
+    
+    if comparison_sales > 0:
+        sales_change = ((total_sales - comparison_sales) / comparison_sales) * 100
+    if comparison_revenue > 0:
+        revenue_change = ((total_revenue - comparison_revenue) / comparison_revenue) * 100
+    if comparison_expenses > 0:
+        expense_change = ((total_expenses - comparison_expenses) / comparison_expenses) * 100
+    if comparison_net_profit != 0:
+        profit_change = ((net_profit - comparison_net_profit) / abs(comparison_net_profit)) * 100
     
     # Product analytics
     top_products = Product.objects.filter(is_active=True).annotate(
-        total_sold=Sum('saleitem__quantity')
+        total_sold=Sum('saleitem__quantity', filter=Q(saleitem__sale__sale_date__date__gte=start_date))
     ).order_by('-total_sold')[:10]
+    
+    # Low stock products
+    low_stock_products = Product.objects.filter(
+        stock_quantity__lte=F('min_stock_level'),
+        is_active=True
+    ).count()
+    
+    # Expense by category
+    expense_categories = Expense.objects.filter(
+        expense_date__gte=start_date
+    ).values('category__name').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')[:10]
+    
+    # Customer analytics
+    top_customers = Customer.objects.annotate(
+        total_purchases=Sum('sale__total_amount', filter=Q(sale__sale_date__date__gte=start_date)),
+        purchase_count=Count('sale', filter=Q(sale__sale_date__date__gte=start_date))
+    ).filter(total_purchases__gt=0).order_by('-total_purchases')[:10]
     
     # Project analytics
     active_projects = Project.objects.filter(status='in_progress').count()
     completed_projects = Project.objects.filter(status='completed').count()
+    total_project_budget = Project.objects.filter(status='in_progress').aggregate(
+        total=Sum('budget')
+    )['total'] or 0
+    
+    # Monthly trends (last 12 months)
+    monthly_data = []
+    for i in range(12):
+        month_start = today.replace(day=1) - timedelta(days=i*30)
+        month_end = month_start + timedelta(days=30)
+        
+        month_sales_total = 0
+        month_sales_qs = Sale.objects.filter(
+            sale_date__date__gte=month_start,
+            sale_date__date__lt=month_end
+        )
+        
+        # Calculate net amount manually for each sale
+        for sale in month_sales_qs:
+            month_sales_total += sale.net_amount
+        
+        month_expenses = Expense.objects.filter(
+            expense_date__gte=month_start,
+            expense_date__lt=month_end
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        monthly_data.append({
+            'month': month_start.strftime('%b %Y'),
+            'sales': float(month_sales_total),
+            'expenses': float(month_expenses),
+            'profit': float(month_sales_total - month_expenses)
+        })
+    
+    # Calculate percentages
+    gross_margin_percent = (gross_profit * 100 / total_revenue) if total_revenue > 0 else 0
+    net_margin_percent = (net_profit * 100 / total_revenue) if total_revenue > 0 else 0
+    cost_percentage = (total_cost * 100 / total_revenue) if total_revenue > 0 else 0
     
     context = {
         'total_sales': total_sales,
         'total_revenue': total_revenue,
         'total_expenses': total_expenses,
-        'profit': total_revenue - total_expenses,
+        'total_cost': total_cost,
+        'gross_profit': gross_profit,
+        'net_profit': net_profit,
+        'profit': net_profit,  # Keep for backward compatibility
+        'sales_change': sales_change,
+        'revenue_change': revenue_change,
+        'expense_change': expense_change,
+        'profit_change': profit_change,
+        'gross_margin_percent': gross_margin_percent,
+        'net_margin_percent': net_margin_percent,
+        'cost_percentage': cost_percentage,
         'top_products': top_products,
+        'low_stock_products': low_stock_products,
+        'expense_categories': expense_categories,
+        'top_customers': top_customers,
         'active_projects': active_projects,
         'completed_projects': completed_projects,
+        'total_project_budget': total_project_budget,
+        'monthly_data': list(reversed(monthly_data)),
+        'days_back': days_back,
+        'start_date': start_date,
+        'comparison_period': f"{comparison_start} to {comparison_end}",
     }
     
     return render(request, 'reports/analytics.html', context)
@@ -652,13 +918,13 @@ def sales_chart_api(request):
         for i in range(days):
             date = start_date + timedelta(days=i)
             try:
-                daily_data = Sale.objects.filter(sale_date__date=date).aggregate(
-                    total_amount=Sum('net_amount'),
-                    transaction_count=Count('id')
-                )
+                daily_sales_qs = Sale.objects.filter(sale_date__date=date)
+                daily_amount = 0
+                daily_count = daily_sales_qs.count()
                 
-                daily_amount = float(daily_data['total_amount'] or 0)
-                daily_count = daily_data['transaction_count'] or 0
+                # Calculate net amount manually for each sale
+                for sale in daily_sales_qs:
+                    daily_amount += sale.net_amount
                 
                 sales_data.append({
                     'date': date.strftime('%Y-%m-%d'),
@@ -725,3 +991,339 @@ def product_search_api(request):
         })
     
     return JsonResponse({'results': results})
+
+# Electrical Maintenance Views
+@login_required
+def electrical_list(request):
+    devices = ElectricalDevice.objects.all().order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        devices = devices.filter(
+            Q(name__icontains=search_query) |
+            Q(model_number__icontains=search_query) |
+            Q(serial_number__icontains=search_query) |
+            Q(manufacturer__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        devices = devices.filter(status=status_filter)
+    
+    # Filter by priority
+    priority_filter = request.GET.get('priority', '')
+    if priority_filter:
+        devices = devices.filter(priority=priority_filter)
+    
+    # Statistics
+    total_devices = devices.count()
+    working_devices = devices.filter(status='working').count()
+    maintenance_devices = devices.filter(status__in=['maintenance', 'repair']).count()
+    critical_devices = devices.filter(priority='critical').count()
+    due_maintenance = devices.filter(next_maintenance__lte=timezone.now().date()).count()
+    
+    # Pagination
+    paginator = Paginator(devices, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'devices': page_obj,
+        'total_devices': total_devices,
+        'working_devices': working_devices,
+        'maintenance_devices': maintenance_devices,
+        'critical_devices': critical_devices,
+        'due_maintenance': due_maintenance,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'priority_filter': priority_filter,
+        'status_choices': ElectricalDevice.STATUS_CHOICES,
+        'priority_choices': ElectricalDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electrical/list.html', context)
+
+@login_required
+def electrical_add(request):
+    if request.method == 'POST':
+        try:
+            device = ElectricalDevice(
+                name=request.POST.get('name'),
+                model_number=request.POST.get('model_number', ''),
+                serial_number=request.POST.get('serial_number', ''),
+                manufacturer=request.POST.get('manufacturer', ''),
+                voltage_rating=request.POST.get('voltage_rating', ''),
+                power_rating=request.POST.get('power_rating', ''),
+                location=request.POST.get('location', 'Main Office'),
+                status=request.POST.get('status', 'working'),
+                priority=request.POST.get('priority', 'medium'),
+                maintenance_cost=request.POST.get('maintenance_cost', 0),
+                description=request.POST.get('description', ''),
+                created_by=request.user
+            )
+            
+            # Handle date fields
+            purchase_date = request.POST.get('purchase_date')
+            if purchase_date:
+                device.purchase_date = purchase_date
+            
+            warranty_expiry = request.POST.get('warranty_expiry')
+            if warranty_expiry:
+                device.warranty_expiry = warranty_expiry
+            
+            last_maintenance = request.POST.get('last_maintenance')
+            if last_maintenance:
+                device.last_maintenance = last_maintenance
+            
+            next_maintenance = request.POST.get('next_maintenance')
+            if next_maintenance:
+                device.next_maintenance = next_maintenance
+            
+            device.save()
+            messages.success(request, f'Electrical device "{device.name}" has been added successfully!')
+            return redirect('electrical_list')
+        except Exception as e:
+            messages.error(request, f'Error adding device: {str(e)}')
+    
+    context = {
+        'status_choices': ElectricalDevice.STATUS_CHOICES,
+        'priority_choices': ElectricalDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electrical/add.html', context)
+
+@login_required
+def electrical_edit(request, device_id):
+    device = get_object_or_404(ElectricalDevice, id=device_id)
+    
+    if request.method == 'POST':
+        try:
+            device.name = request.POST.get('name')
+            device.model_number = request.POST.get('model_number', '')
+            device.serial_number = request.POST.get('serial_number', '')
+            device.manufacturer = request.POST.get('manufacturer', '')
+            device.voltage_rating = request.POST.get('voltage_rating', '')
+            device.power_rating = request.POST.get('power_rating', '')
+            device.location = request.POST.get('location', 'Main Office')
+            device.status = request.POST.get('status', 'working')
+            device.priority = request.POST.get('priority', 'medium')
+            device.maintenance_cost = request.POST.get('maintenance_cost', 0)
+            device.description = request.POST.get('description', '')
+            
+            # Handle date fields
+            purchase_date = request.POST.get('purchase_date')
+            device.purchase_date = purchase_date if purchase_date else None
+            
+            warranty_expiry = request.POST.get('warranty_expiry')
+            device.warranty_expiry = warranty_expiry if warranty_expiry else None
+            
+            last_maintenance = request.POST.get('last_maintenance')
+            device.last_maintenance = last_maintenance if last_maintenance else None
+            
+            next_maintenance = request.POST.get('next_maintenance')
+            device.next_maintenance = next_maintenance if next_maintenance else None
+            
+            device.save()
+            messages.success(request, f'Electrical device "{device.name}" has been updated successfully!')
+            return redirect('electrical_list')
+        except Exception as e:
+            messages.error(request, f'Error updating device: {str(e)}')
+    
+    context = {
+        'device': device,
+        'status_choices': ElectricalDevice.STATUS_CHOICES,
+        'priority_choices': ElectricalDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electrical/edit.html', context)
+
+@login_required
+def electrical_delete(request, device_id):
+    device = get_object_or_404(ElectricalDevice, id=device_id)
+    
+    if request.method == 'POST':
+        device_name = device.name
+        device.delete()
+        messages.success(request, f'Electrical device "{device_name}" has been deleted successfully!')
+        return redirect('electrical_list')
+    
+    return render(request, 'electrical/delete.html', {'device': device})
+
+# Electronics Maintenance Views
+@login_required
+def electronics_list(request):
+    devices = ElectronicsDevice.objects.all().order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        devices = devices.filter(
+            Q(name__icontains=search_query) |
+            Q(model_number__icontains=search_query) |
+            Q(serial_number__icontains=search_query) |
+            Q(manufacturer__icontains=search_query) |
+            Q(location__icontains=search_query) |
+            Q(assigned_to__icontains=search_query)
+        )
+    
+    # Filter by device type
+    type_filter = request.GET.get('device_type', '')
+    if type_filter:
+        devices = devices.filter(device_type=type_filter)
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        devices = devices.filter(status=status_filter)
+    
+    # Filter by priority
+    priority_filter = request.GET.get('priority', '')
+    if priority_filter:
+        devices = devices.filter(priority=priority_filter)
+    
+    # Statistics
+    total_devices = devices.count()
+    working_devices = devices.filter(status='working').count()
+    maintenance_devices = devices.filter(status__in=['maintenance', 'repair']).count()
+    critical_devices = devices.filter(priority='critical').count()
+    due_maintenance = devices.filter(next_maintenance__lte=timezone.now().date()).count()
+    
+    # Device type breakdown
+    device_type_stats = {}
+    for device_type, display_name in ElectronicsDevice.DEVICE_TYPES:
+        count = devices.filter(device_type=device_type).count()
+        if count > 0:
+            device_type_stats[display_name] = count
+    
+    # Pagination
+    paginator = Paginator(devices, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'devices': page_obj,
+        'total_devices': total_devices,
+        'working_devices': working_devices,
+        'maintenance_devices': maintenance_devices,
+        'critical_devices': critical_devices,
+        'due_maintenance': due_maintenance,
+        'device_type_stats': device_type_stats,
+        'search_query': search_query,
+        'type_filter': type_filter,
+        'status_filter': status_filter,
+        'priority_filter': priority_filter,
+        'device_types': ElectronicsDevice.DEVICE_TYPES,
+        'status_choices': ElectronicsDevice.STATUS_CHOICES,
+        'priority_choices': ElectronicsDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electronics/list.html', context)
+
+@login_required
+def electronics_add(request):
+    if request.method == 'POST':
+        try:
+            device = ElectronicsDevice(
+                name=request.POST.get('name'),
+                device_type=request.POST.get('device_type', 'other'),
+                model_number=request.POST.get('model_number', ''),
+                serial_number=request.POST.get('serial_number', ''),
+                manufacturer=request.POST.get('manufacturer', ''),
+                operating_system=request.POST.get('operating_system', ''),
+                specifications=request.POST.get('specifications', ''),
+                location=request.POST.get('location', 'Main Office'),
+                status=request.POST.get('status', 'working'),
+                priority=request.POST.get('priority', 'medium'),
+                maintenance_cost=request.POST.get('maintenance_cost', 0),
+                description=request.POST.get('description', ''),
+                assigned_to=request.POST.get('assigned_to', ''),
+                created_by=request.user
+            )
+            
+            # Handle date fields
+            purchase_date = request.POST.get('purchase_date')
+            if purchase_date:
+                device.purchase_date = purchase_date
+            
+            warranty_expiry = request.POST.get('warranty_expiry')
+            if warranty_expiry:
+                device.warranty_expiry = warranty_expiry
+            
+            last_maintenance = request.POST.get('last_maintenance')
+            if last_maintenance:
+                device.last_maintenance = last_maintenance
+            
+            next_maintenance = request.POST.get('next_maintenance')
+            if next_maintenance:
+                device.next_maintenance = next_maintenance
+            
+            device.save()
+            messages.success(request, f'Electronics device "{device.name}" has been added successfully!')
+            return redirect('electronics_list')
+        except Exception as e:
+            messages.error(request, f'Error adding device: {str(e)}')
+    
+    context = {
+        'device_types': ElectronicsDevice.DEVICE_TYPES,
+        'status_choices': ElectronicsDevice.STATUS_CHOICES,
+        'priority_choices': ElectronicsDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electronics/add.html', context)
+
+@login_required
+def electronics_edit(request, device_id):
+    device = get_object_or_404(ElectronicsDevice, id=device_id)
+    
+    if request.method == 'POST':
+        try:
+            device.name = request.POST.get('name')
+            device.device_type = request.POST.get('device_type', 'other')
+            device.model_number = request.POST.get('model_number', '')
+            device.serial_number = request.POST.get('serial_number', '')
+            device.manufacturer = request.POST.get('manufacturer', '')
+            device.operating_system = request.POST.get('operating_system', '')
+            device.specifications = request.POST.get('specifications', '')
+            device.location = request.POST.get('location', 'Main Office')
+            device.status = request.POST.get('status', 'working')
+            device.priority = request.POST.get('priority', 'medium')
+            device.maintenance_cost = request.POST.get('maintenance_cost', 0)
+            device.description = request.POST.get('description', '')
+            device.assigned_to = request.POST.get('assigned_to', '')
+            
+            # Handle date fields
+            purchase_date = request.POST.get('purchase_date')
+            device.purchase_date = purchase_date if purchase_date else None
+            
+            warranty_expiry = request.POST.get('warranty_expiry')
+            device.warranty_expiry = warranty_expiry if warranty_expiry else None
+            
+            last_maintenance = request.POST.get('last_maintenance')
+            device.last_maintenance = last_maintenance if last_maintenance else None
+            
+            next_maintenance = request.POST.get('next_maintenance')
+            device.next_maintenance = next_maintenance if next_maintenance else None
+            
+            device.save()
+            messages.success(request, f'Electronics device "{device.name}" has been updated successfully!')
+            return redirect('electronics_list')
+        except Exception as e:
+            messages.error(request, f'Error updating device: {str(e)}')
+    
+    context = {
+        'device': device,
+        'device_types': ElectronicsDevice.DEVICE_TYPES,
+        'status_choices': ElectronicsDevice.STATUS_CHOICES,
+        'priority_choices': ElectronicsDevice.PRIORITY_CHOICES,
+    }
+    return render(request, 'electronics/edit.html', context)
+
+@login_required
+def electronics_delete(request, device_id):
+    device = get_object_or_404(ElectronicsDevice, id=device_id)
+    
+    if request.method == 'POST':
+        device_name = device.name
+        device.delete()
+        messages.success(request, f'Electronics device "{device_name}" has been deleted successfully!')
+        return redirect('electronics_list')
+    
+    return render(request, 'electronics/delete.html', {'device': device})

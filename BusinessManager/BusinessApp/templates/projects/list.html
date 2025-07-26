@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Projects - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .projects-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .projects-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        border-left: 4px solid;
+        transition: all var(--transition-speed);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card.total { border-left-color: var(--primary-color); }
+    .stats-card.planning { border-left-color: #2196f3; }
+    .stats-card.in-progress { border-left-color: #ff9800; }
+    .stats-card.completed { border-left-color: #4caf50; }
+    .stats-card.on-hold { border-left-color: #e91e63; }
+    
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .projects-table {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        margin: 0;
+    }
+    
+    .project-row {
+        transition: background-color var(--transition-speed);
+        cursor: pointer;
+    }
+    
+    .project-row:hover {
+        background-color: rgba(102, 126, 234, 0.05);
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 100px;
+    }
+    
+    .status-planning { background-color: #e3f2fd; color: #1976d2; }
+    .status-in-progress { background-color: #fff3e0; color: #f57c00; }
+    .status-completed { background-color: #e8f5e8; color: #388e3c; }
+    .status-on-hold { background-color: #fce4ec; color: #c2185b; }
+    
+    .progress-bar-container {
+        width: 100px;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width var(--transition-speed);
+    }
+    
+    .search-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="projects-container">
+    <!-- Projects Header -->
+    <div class="projects-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-2">
+                    <i class="fas fa-project-diagram me-3"></i>Project Management
+                </h1>
+                <p class="mb-0 opacity-75">Manage and track your business projects</p>
+            </div>
+            <a href="{% url 'project_add' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-plus me-2"></i>New Project
+            </a>
+        </div>
+    </div>
+    
+    <!-- Project Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card total">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: var(--primary-color);">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold text-primary">{{ stats.total_projects }}</div>
+                        <div class="text-muted small">Total Projects</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card planning">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #2196f3;">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold" style="color: #2196f3;">{{ stats.planning_projects }}</div>
+                        <div class="text-muted small">Planning</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card in-progress">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #ff9800;">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold" style="color: #ff9800;">{{ stats.in_progress_projects }}</div>
+                        <div class="text-muted small">In Progress</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card completed">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #4caf50;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold text-success">{{ stats.completed_projects }}</div>
+                        <div class="text-muted small">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card on-hold">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: #e91e63;">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-4 fw-bold" style="color: #e91e63;">{{ stats.on_hold_projects }}</div>
+                        <div class="text-muted small">On Hold</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="stats-card total">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon" style="background: var(--success-color);">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="fs-5 fw-bold text-success">Tsh {{ stats.total_budget|floatformat:2|intcomma }}</div>
+                        <div class="text-muted small">Total Budget</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filter Section -->
+    <div class="search-section">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="search" class="form-label">
+                    <i class="fas fa-search me-1"></i>Search Projects
+                </label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ request.GET.search }}" 
+                       placeholder="Search by name, client, or description...">
+            </div>
+            
+            <div class="col-md-3">
+                <label for="status" class="form-label">
+                    <i class="fas fa-filter me-1"></i>Filter by Status
+                </label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="planning" {% if request.GET.status == 'planning' %}selected{% endif %}>Planning</option>
+                    <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="on_hold" {% if request.GET.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="sort" class="form-label">
+                    <i class="fas fa-sort me-1"></i>Sort By
+                </label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Name</option>
+                    <option value="client" {% if request.GET.sort == 'client' %}selected{% endif %}>Client</option>
+                    <option value="start_date" {% if request.GET.sort == 'start_date' %}selected{% endif %}>Start Date</option>
+                    <option value="budget" {% if request.GET.sort == 'budget' %}selected{% endif %}>Budget</option>
+                    <option value="progress" {% if request.GET.sort == 'progress' %}selected{% endif %}>Progress</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <a href="{% url 'project_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Projects Table -->
+    <div class="projects-table">
+        <div class="table-header">
+            <h4 class="mb-0">
+                <i class="fas fa-list me-2"></i>Projects List
+                <span class="ms-2 badge bg-light text-dark">{{ projects.count }} projects</span>
+            </h4>
+        </div>
+        
+        {% if projects %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Project</th>
+                            <th>Client</th>
+                            <th>Budget</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Timeline</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                        <tr class="project-row">
+                            <td>
+                                <div>
+                                    <div class="fw-bold text-primary">{{ project.name }}</div>
+                                    <div class="text-muted small">{{ project.description|truncatechars:50 }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ project.client }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-success">Tsh {{ project.budget|floatformat:2|intcomma }}</div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ project.status }}">
+                                    {{ project.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress-bar-container me-2">
+                                        <div class="progress-bar-fill 
+                                            {% if project.progress < 25 %}bg-danger
+                                            {% elif project.progress < 50 %}bg-warning
+                                            {% elif project.progress < 75 %}bg-info
+                                            {% else %}bg-success{% endif %}"
+                                            style="width: {{ project.progress }}%"></div>
+                                    </div>
+                                    <span class="small">{{ project.progress }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><strong>Start:</strong> {{ project.start_date|date:"M d, Y" }}</div>
+                                    {% if project.end_date %}
+                                        <div><strong>End:</strong> {{ project.end_date|date:"M d, Y" }}</div>
+                                    {% else %}
+                                        <div class="text-muted">No end date</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'project_edit' project.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit Project">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            title="Delete Project"
+                                            onclick="confirmDelete({{ project.id }}, '{{ project.name|escapejs }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            title="View Details"
+                                            onclick="viewProject({{ project.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-project-diagram"></i>
+                <h4>No Projects Found</h4>
+                <p class="mb-4">
+                    {% if request.GET.search or request.GET.status %}
+                        No projects match your current filters. <a href="{% url 'project_list' %}">Clear filters</a> to see all projects.
+                    {% else %}
+                        You haven't created any projects yet. Start by adding your first project!
+                    {% endif %}
+                </p>
+                <a href="{% url 'project_add' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Add Your First Project
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Project Details Modal -->
+<div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-project-diagram me-2"></i>Project Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="projectModalBody">
+                <!-- Project details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the project "<span id="deleteProjectName"></span>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    This action cannot be undone and will permanently remove all project data.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Project
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(projectId, projectName) {
+    document.getElementById('deleteProjectName').textContent = projectName;
+    document.getElementById('deleteForm').action = `/projects/delete/${projectId}/`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+function viewProject(projectId) {
+    // Show loading state
+    document.getElementById('projectModalBody').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details...</p>
+        </div>
+    `;
+    
+    const projectModal = new bootstrap.Modal(document.getElementById('projectModal'));
+    projectModal.show();
+    
+    // In a real implementation, you would fetch project details via AJAX
+    // For now, we'll show a placeholder
+    setTimeout(() => {
+        document.getElementById('projectModalBody').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Project details view will be implemented in the next update.
+            </div>
+            <div class="text-center">
+                <a href="/projects/edit/${projectId}/" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Edit Project
+                </a>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Auto-submit search form on filter change
+document.getElementById('status').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('sort').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Enhanced search with enter key
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        this.form.submit();
+    }
+});
+</script>
+{% endblock %}

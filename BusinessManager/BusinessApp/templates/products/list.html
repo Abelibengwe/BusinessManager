@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Products - BK-Pro Business Manager{% endblock %}
 
@@ -120,16 +121,16 @@
                                 </td>
                                 <td><code>{{ product.sku }}</code></td>
                                 <td>{{ product.category.name }}</td>
-                                <td>${{ product.cost_price }}</td>
+                                <td>Tsh {{ product.cost_price|intcomma }}</td>
                                 <td>
-                                    <strong>${{ product.selling_price }}</strong>
+                                    <strong>Tsh {{ product.selling_price|intcomma }}</strong>
                                     <br><small class="text-success">{{ product.profit_margin|floatformat:1 }}% margin</small>
                                 </td>
                                 <td>
                                     <span class="badge {% if product.is_low_stock %}badge-warning{% elif product.stock_quantity == 0 %}badge-danger{% else %}badge-success{% endif %}">
-                                        {{ product.stock_quantity }} units
+                                        {{ product.stock_quantity|intcomma }} units
                                     </span>
-                                    <br><small class="text-muted">Min: {{ product.min_stock_level }}</small>
+                                    <br><small class="text-muted">Min: {{ product.min_stock_level|intcomma }}</small>
                                 </td>
                                 <td>
                                     {% if product.is_active %}
@@ -149,12 +150,11 @@
                                                 title="Update Stock">
                                             <i class="fas fa-warehouse"></i>
                                         </button>
-                                        <a href="{% url 'product_delete' product.pk %}" 
-                                           class="btn btn-outline-danger" 
-                                           onclick="return confirm('Are you sure you want to delete this product?')"
-                                           title="Delete">
+                                        <button class="btn btn-outline-danger" 
+                                                onclick="openDeleteModal('{{ product.id }}', '{{ product.name }}')"
+                                                title="Delete">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -195,8 +195,8 @@
                                     <h6 class="product-title">{{ product.name }}</h6>
                                     <p class="product-sku text-muted"><small>SKU: {{ product.sku }}</small></p>
                                     <div class="product-price">
-                                        <strong>${{ product.selling_price }}</strong>
-                                        <small class="text-muted">(Cost: ${{ product.cost_price }})</small>
+                                        <strong>Tsh {{ product.selling_price|intcomma }}</strong>
+                                        <small class="text-muted">(Cost: Tsh {{ product.cost_price|intcomma }})</small>
                                     </div>
                                     <div class="product-stock mt-2">
                                         <span class="badge {% if product.is_low_stock %}badge-warning{% elif product.stock_quantity == 0 %}badge-danger{% else %}badge-success{% endif %}">
@@ -311,7 +311,42 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Product
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the product "<strong id="product_name_to_delete"></strong>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This action will deactivate the product instead of permanently deleting it to preserve data integrity.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+.products-container {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
 .product-card {
     overflow: hidden;
     transition: all 0.3s ease;
@@ -406,6 +441,12 @@ function showStockModal(productId, productName) {
     $('#stockProductId').val(productId);
     $('#stockProductName').val(productName);
     $('#stockModal').modal('show');
+}
+
+function openDeleteModal(productId, productName) {
+    $('#product_name_to_delete').text(productName);
+    $('#deleteForm').attr('action', `/products/${productId}/delete/`);
+    $('#deleteModal').modal('show');
 }
 </script>
 {% endblock %}

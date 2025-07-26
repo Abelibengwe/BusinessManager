@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Edit Project - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-project-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .project-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .required-field {
+        color: #dc3545;
+    }
+    
+    .progress-preview {
+        margin-top: 1rem;
+    }
+    
+    .progress-bar-custom {
+        height: 20px;
+        border-radius: var(--border-radius);
+    }
+    
+    .project-preview {
+        background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-planning { background-color: #e3f2fd; color: #1976d2; }
+    .status-in-progress { background-color: #fff3e0; color: #f57c00; }
+    .status-completed { background-color: #e8f5e8; color: #388e3c; }
+    .status-on-hold { background-color: #fce4ec; color: #c2185b; }
+    
+    .project-history {
+        background: #f8f9fa;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .history-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .history-item:last-child {
+        border-bottom: none;
+    }
+    
+    .change-indicator {
+        background: #e3f2fd;
+        color: #1976d2;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-project-container">
+    <!-- Page Header -->
+    <div class="project-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-edit me-3"></i>Edit Project
+                </h1>
+                <p class="mb-0 opacity-75">Update project information and track progress</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'project_list' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Projects
+                </a>
+                <button type="button" class="btn btn-outline-light" onclick="confirmDelete()">
+                    <i class="fas fa-trash me-2"></i>Delete Project
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Project Form -->
+            <div class="form-section">
+                <h4 class="form-section-title">
+                    <i class="fas fa-project-diagram me-2"></i>Project Details
+                </h4>
+                
+                <form method="POST" id="projectForm">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="name" class="form-label">
+                                Project Name <span class="required-field">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ project.name }}" placeholder="e.g., Website Redesign, Mobile App Development" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">
+                                Status <span class="required-field">*</span>
+                            </label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="planning" {% if project.status == 'planning' %}selected{% endif %}>Planning</option>
+                                <option value="in_progress" {% if project.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if project.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="on_hold" {% if project.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="description" class="form-label">
+                                Description <span class="required-field">*</span>
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="Detailed description of the project..." required>{{ project.description }}</textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="client" class="form-label">
+                                Client <span class="required-field">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="client" name="client" 
+                                   value="{{ project.client }}" placeholder="Client or company name" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="budget" class="form-label">
+                                Budget (Tsh) <span class="required-field">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="budget" name="budget" 
+                                   value="{{ project.budget }}" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="start_date" class="form-label">
+                                Start Date <span class="required-field">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ project.start_date|date:'Y-m-d' }}" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label">
+                                Expected End Date
+                            </label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{% if project.end_date %}{{ project.end_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="progress" class="form-label">
+                                Progress (%) <span class="required-field">*</span>
+                            </label>
+                            <input type="range" class="form-range" id="progress" name="progress" 
+                                   min="0" max="100" value="{{ project.progress }}" oninput="updateProgressDisplay(this.value)">
+                            <div class="progress-preview">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">Project Progress</span>
+                                    <span id="progressPercent" class="fw-bold">{{ project.progress }}%</span>
+                                </div>
+                                <div class="progress progress-bar-custom">
+                                    <div id="progressBar" class="progress-bar 
+                                        {% if project.progress < 25 %}bg-danger
+                                        {% elif project.progress < 50 %}bg-warning
+                                        {% elif project.progress < 75 %}bg-info
+                                        {% else %}bg-success{% endif %}" 
+                                        role="progressbar" style="width: {{ project.progress }}%" 
+                                        aria-valuenow="{{ project.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-modern btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Project
+                        </button>
+                        <a href="{% url 'project_list' %}" class="btn btn-modern btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="button" class="btn btn-modern btn-warning" onclick="resetForm()">
+                            <i class="fas fa-undo me-2"></i>Reset Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Project Preview -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-eye me-2"></i>Project Preview
+                </h5>
+                
+                <div class="project-preview">
+                    <div class="mb-3">
+                        <strong>Name:</strong>
+                        <div id="preview-name">{{ project.name }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Client:</strong>
+                        <div id="preview-client">{{ project.client }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Budget:</strong>
+                        <div id="preview-budget" class="text-success fs-5">Tsh {{ project.budget|floatformat:2|intcomma }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <div id="preview-status">
+                            <span class="status-badge status-{{ project.status }}">{{ project.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Timeline:</strong>
+                        <div id="preview-timeline">
+                            {{ project.start_date|date:"M d, Y" }}
+                            {% if project.end_date %}
+                                - {{ project.end_date|date:"M d, Y" }}
+                            {% else %}
+                                - No end date
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <strong>Description:</strong>
+                        <div id="preview-description">{{ project.description }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project Information -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-info-circle me-2"></i>Project Information
+                </h5>
+                
+                <div class="project-history">
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar-plus text-primary me-2"></i>Created</span>
+                            <span class="text-muted">{{ project.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-edit text-warning me-2"></i>Last Updated</span>
+                            <span class="text-muted">{{ project.updated_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-clock text-info me-2"></i>Duration</span>
+                            <span class="text-muted">
+                                {% if project.end_date %}
+                                    {% with project.end_date|timeuntil:project.start_date as duration %}
+                                        {{ duration }}
+                                    {% endwith %}
+                                {% else %}
+                                    Ongoing
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-percentage text-success me-2"></i>Progress</span>
+                            <span class="fw-bold">{{ project.progress }}% Complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project Tips for Editing -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-lightbulb me-2"></i>Editing Tips
+                </h5>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 border-0">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-tasks text-primary me-2"></i>
+                            </div>
+                            <div>
+                                <strong>Track Progress</strong>
+                                <p class="mb-0 text-muted small">Regularly update the progress percentage to keep stakeholders informed.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item px-0 border-0">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-comments text-success me-2"></i>
+                            </div>
+                            <div>
+                                <strong>Communication</strong>
+                                <p class="mb-0 text-muted small">Keep the description updated with latest project developments.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item px-0 border-0">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-calendar-check text-warning me-2"></i>
+                            </div>
+                            <div>
+                                <strong>Timeline Updates</strong>
+                                <p class="mb-0 text-muted small">Adjust end dates if project scope or timeline changes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the project "<strong>{{ project.name }}</strong>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    This action cannot be undone and will permanently remove all project data including:
+                    <ul class="mb-0 mt-2">
+                        <li>Project details and history</li>
+                        <li>Associated timeline and progress data</li>
+                        <li>Client information and budget records</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'project_delete' project.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Project
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store original values for reset functionality
+const originalValues = {
+    name: '{{ project.name|escapejs }}',
+    client: '{{ project.client|escapejs }}',
+    budget: '{{ project.budget }}',
+    status: '{{ project.status }}',
+    description: '{{ project.description|escapejs }}',
+    start_date: '{{ project.start_date|date:"Y-m-d" }}',
+    end_date: '{% if project.end_date %}{{ project.end_date|date:"Y-m-d" }}{% endif %}',
+    progress: '{{ project.progress }}'
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Real-time preview updates
+    document.getElementById('name').addEventListener('input', function() {
+        const value = this.value || 'Project name not specified';
+        document.getElementById('preview-name').textContent = value;
+    });
+    
+    document.getElementById('client').addEventListener('input', function() {
+        const value = this.value || 'Client not specified';
+        document.getElementById('preview-client').textContent = value;
+    });
+    
+    document.getElementById('budget').addEventListener('input', function() {
+        const value = parseFloat(this.value) || 0;
+        document.getElementById('preview-budget').textContent = 'Tsh ' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    });
+    
+    document.getElementById('status').addEventListener('change', function() {
+        const value = this.value;
+        const statusText = this.options[this.selectedIndex].text;
+        const statusElement = document.getElementById('preview-status');
+        statusElement.innerHTML = `<span class="status-badge status-${value}">${statusText}</span>`;
+    });
+    
+    document.getElementById('description').addEventListener('input', function() {
+        const value = this.value || 'No description provided';
+        document.getElementById('preview-description').textContent = value;
+    });
+    
+    // Timeline preview
+    function updateTimeline() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        let timeline = 'No dates specified';
+        
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            timeline = `${start.toLocaleDateString()} - ${end.toLocaleDateString()} (${duration} days)`;
+        } else if (startDate) {
+            const start = new Date(startDate);
+            timeline = `Starts: ${start.toLocaleDateString()}`;
+        }
+        
+        document.getElementById('preview-timeline').textContent = timeline;
+    }
+    
+    document.getElementById('start_date').addEventListener('change', updateTimeline);
+    document.getElementById('end_date').addEventListener('change', updateTimeline);
+    
+    // Form validation
+    document.getElementById('projectForm').addEventListener('submit', function(e) {
+        const budget = parseFloat(document.getElementById('budget').value);
+        const startDate = new Date(document.getElementById('start_date').value);
+        const endDate = document.getElementById('end_date').value ? new Date(document.getElementById('end_date').value) : null;
+        
+        if (budget <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid budget amount greater than 0.');
+            document.getElementById('budget').focus();
+            return false;
+        }
+        
+        if (endDate && endDate <= startDate) {
+            e.preventDefault();
+            alert('End date must be after start date.');
+            document.getElementById('end_date').focus();
+            return false;
+        }
+        
+        const name = document.getElementById('name').value.trim();
+        if (name.length < 3) {
+            e.preventDefault();
+            alert('Please enter a more descriptive project name (at least 3 characters).');
+            document.getElementById('name').focus();
+            return false;
+        }
+    });
+});
+
+function updateProgressDisplay(value) {
+    document.getElementById('progressPercent').textContent = value + '%';
+    document.getElementById('progressBar').style.width = value + '%';
+    document.getElementById('progressBar').setAttribute('aria-valuenow', value);
+    
+    // Change color based on progress
+    const progressBar = document.getElementById('progressBar');
+    progressBar.className = 'progress-bar';
+    if (value < 25) {
+        progressBar.classList.add('bg-danger');
+    } else if (value < 50) {
+        progressBar.classList.add('bg-warning');
+    } else if (value < 75) {
+        progressBar.classList.add('bg-info');
+    } else {
+        progressBar.classList.add('bg-success');
+    }
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset all changes? This will restore the original project values.')) {
+        // Reset all form fields to original values
+        document.getElementById('name').value = originalValues.name;
+        document.getElementById('client').value = originalValues.client;
+        document.getElementById('budget').value = originalValues.budget;
+        document.getElementById('status').value = originalValues.status;
+        document.getElementById('description').value = originalValues.description;
+        document.getElementById('start_date').value = originalValues.start_date;
+        document.getElementById('end_date').value = originalValues.end_date;
+        document.getElementById('progress').value = originalValues.progress;
+        
+        // Update preview
+        document.getElementById('preview-name').textContent = originalValues.name;
+        document.getElementById('preview-client').textContent = originalValues.client;
+        document.getElementById('preview-budget').textContent = 'Tsh ' + parseFloat(originalValues.budget).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        document.getElementById('preview-description').textContent = originalValues.description;
+        
+        // Update status badge
+        const statusSelect = document.getElementById('status');
+        const statusText = statusSelect.options[statusSelect.selectedIndex].text;
+        document.getElementById('preview-status').innerHTML = `<span class="status-badge status-${originalValues.status}">${statusText}</span>`;
+        
+        // Update progress
+        updateProgressDisplay(originalValues.progress);
+        
+        // Update timeline
+        let timeline = originalValues.start_date;
+        if (originalValues.end_date) {
+            const start = new Date(originalValues.start_date);
+            const end = new Date(originalValues.end_date);
+            timeline = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+        }
+        document.getElementById('preview-timeline').textContent = timeline;
+        
+        // Focus on first field
+        document.getElementById('name').focus();
+    }
+}
+
+function confirmDelete() {
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

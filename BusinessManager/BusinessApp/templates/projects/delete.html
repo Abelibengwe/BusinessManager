@@ -1,0 +1,445 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Delete Project - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-project-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .delete-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .warning-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+        border-left: 5px solid #dc3545;
+    }
+    
+    .project-details-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .danger-title {
+        color: #dc3545;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #dc3545;
+    }
+    
+    .project-info-card {
+        background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+        margin-bottom: 1rem;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-planning { background-color: #e3f2fd; color: #1976d2; }
+    .status-in-progress { background-color: #fff3e0; color: #f57c00; }
+    .status-completed { background-color: #e8f5e8; color: #388e3c; }
+    .status-on-hold { background-color: #fce4ec; color: #c2185b; }
+    
+    .warning-icon {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+    
+    .consequences-list {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+    
+    .consequences-list h6 {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .consequences-list ul {
+        color: #856404;
+        margin-bottom: 0;
+    }
+    
+    .consequences-list li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-buttons {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        text-align: center;
+    }
+    
+    .btn-danger-confirm {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+        transition: all var(--transition-speed);
+    }
+    
+    .btn-danger-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+        color: white;
+    }
+    
+    .progress-bar-container {
+        width: 100%;
+        height: 10px;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width var(--transition-speed);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-project-container">
+    <!-- Delete Header -->
+    <div class="delete-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-exclamation-triangle me-3"></i>Delete Project
+                </h1>
+                <p class="mb-0 opacity-75">Permanently remove project from your system</p>
+            </div>
+            <a href="{% url 'project_list' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Projects
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Warning Section -->
+            <div class="warning-section">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    <h3 class="danger-title text-center">
+                        <i class="fas fa-skull-crossbones me-2"></i>Permanent Deletion Warning
+                    </h3>
+                </div>
+                
+                <div class="alert alert-danger" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-warning me-2"></i>This action cannot be undone!
+                    </h5>
+                    <p class="mb-0">
+                        You are about to permanently delete the project "<strong>{{ project.name }}</strong>". 
+                        This action will remove all project data from your system immediately and cannot be reversed.
+                    </p>
+                </div>
+                
+                <div class="consequences-list">
+                    <h6><i class="fas fa-list-ul me-2"></i>What will be deleted:</h6>
+                    <ul>
+                        <li><strong>Project Information:</strong> Name, description, client details, and status</li>
+                        <li><strong>Financial Data:</strong> Budget information and project value</li>
+                        <li><strong>Timeline Data:</strong> Start date, end date, and progress tracking</li>
+                        <li><strong>Historical Records:</strong> Creation and modification timestamps</li>
+                        <li><strong>Associated Data:</strong> Any related project files or references</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-lightbulb me-2"></i>Alternative Options:
+                    </h6>
+                    <p class="mb-2">Instead of deleting, consider:</p>
+                    <ul class="mb-0">
+                        <li>Setting project status to "On Hold" or "Completed"</li>
+                        <li>Archiving the project for future reference</li>
+                        <li>Editing the project to update its information</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Project Details -->
+            <div class="project-details-section">
+                <h4 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>Project Details
+                </h4>
+                
+                <div class="project-info-card">
+                    <div class="mb-3">
+                        <strong>Project Name:</strong>
+                        <div class="text-primary fs-5">{{ project.name }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Client:</strong>
+                        <div>{{ project.client }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Budget:</strong>
+                        <div class="text-success fs-5">Tsh {{ project.budget|floatformat:2|intcomma }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <div>
+                            <span class="status-badge status-{{ project.status }}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Progress:</strong>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ project.progress }}% Complete</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill 
+                                {% if project.progress < 25 %}bg-danger
+                                {% elif project.progress < 50 %}bg-warning
+                                {% elif project.progress < 75 %}bg-info
+                                {% else %}bg-success{% endif %}"
+                                style="width: {{ project.progress }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Timeline:</strong>
+                        <div class="small">
+                            <div><strong>Start:</strong> {{ project.start_date|date:"M d, Y" }}</div>
+                            {% if project.end_date %}
+                                <div><strong>End:</strong> {{ project.end_date|date:"M d, Y" }}</div>
+                            {% else %}
+                                <div class="text-muted">No end date set</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Created:</strong>
+                        <div class="text-muted small">{{ project.created_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    
+                    <div>
+                        <strong>Description:</strong>
+                        <div class="text-muted small">{{ project.description|truncatechars:100 }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="project-details-section">
+                <h5 class="section-title">
+                    <i class="fas fa-tools me-2"></i>Alternative Actions
+                </h5>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'project_edit' project.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Project Instead
+                    </a>
+                    
+                    {% if project.status != 'on_hold' %}
+                    <form method="POST" action="{% url 'project_edit' project.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="on_hold">
+                        <input type="hidden" name="name" value="{{ project.name }}">
+                        <input type="hidden" name="client" value="{{ project.client }}">
+                        <input type="hidden" name="budget" value="{{ project.budget }}">
+                        <input type="hidden" name="description" value="{{ project.description }}">
+                        <input type="hidden" name="start_date" value="{{ project.start_date|date:'Y-m-d' }}">
+                        {% if project.end_date %}
+                        <input type="hidden" name="end_date" value="{{ project.end_date|date:'Y-m-d' }}">
+                        {% endif %}
+                        <input type="hidden" name="progress" value="{{ project.progress }}">
+                        <button type="submit" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-pause me-2"></i>Put On Hold Instead
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if project.status != 'completed' and project.progress < 100 %}
+                    <form method="POST" action="{% url 'project_edit' project.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="completed">
+                        <input type="hidden" name="progress" value="100">
+                        <input type="hidden" name="name" value="{{ project.name }}">
+                        <input type="hidden" name="client" value="{{ project.client }}">
+                        <input type="hidden" name="budget" value="{{ project.budget }}">
+                        <input type="hidden" name="description" value="{{ project.description }}">
+                        <input type="hidden" name="start_date" value="{{ project.start_date|date:'Y-m-d' }}">
+                        {% if project.end_date %}
+                        <input type="hidden" name="end_date" value="{{ project.end_date|date:'Y-m-d' }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-outline-success w-100">
+                            <i class="fas fa-check-circle me-2"></i>Mark as Completed
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Section -->
+    <div class="action-buttons">
+        <h5 class="mb-4">
+            <i class="fas fa-keyboard me-2"></i>Type "DELETE" to confirm permanent deletion
+        </h5>
+        
+        <form method="POST" id="deleteForm">
+            {% csrf_token %}
+            <div class="row justify-content-center">
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-lg text-center" 
+                           id="confirmText" placeholder="Type DELETE here" 
+                           style="font-weight: bold; letter-spacing: 2px;">
+                </div>
+            </div>
+            
+            <div class="mt-4 d-flex justify-content-center gap-3">
+                <button type="submit" class="btn btn-danger-confirm" id="deleteButton" disabled>
+                    <i class="fas fa-trash-alt me-2"></i>Permanently Delete Project
+                </button>
+                <a href="{% url 'project_list' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times me-2"></i>Cancel & Go Back
+                </a>
+                <a href="{% url 'project_edit' project.id %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-edit me-2"></i>Edit Instead
+                </a>
+            </div>
+        </form>
+        
+        <div class="mt-3 text-muted small">
+            <i class="fas fa-info-circle me-1"></i>
+            This action will take effect immediately and cannot be undone.
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmText = document.getElementById('confirmText');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.getElementById('deleteForm');
+    
+    // Enable/disable delete button based on confirmation text
+    confirmText.addEventListener('input', function() {
+        if (this.value.toUpperCase() === 'DELETE') {
+            deleteButton.disabled = false;
+            deleteButton.classList.remove('btn-secondary');
+            deleteButton.classList.add('btn-danger-confirm');
+        } else {
+            deleteButton.disabled = true;
+            deleteButton.classList.remove('btn-danger-confirm');
+            deleteButton.classList.add('btn-secondary');
+        }
+    });
+    
+    // Additional confirmation on form submission
+    deleteForm.addEventListener('submit', function(e) {
+        if (confirmText.value.toUpperCase() !== 'DELETE') {
+            e.preventDefault();
+            alert('Please type "DELETE" to confirm deletion.');
+            confirmText.focus();
+            return false;
+        }
+        
+        // Final confirmation dialog
+        const confirmed = confirm(
+            'FINAL CONFIRMATION\n\n' +
+            'Are you 100% sure you want to permanently delete the project "{{ project.name|escapejs }}"?\n\n' +
+            'This action cannot be undone and will remove all project data immediately.\n\n' +
+            'Click OK to proceed with deletion, or Cancel to abort.'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show loading state
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting Project...';
+        deleteButton.disabled = true;
+        
+        // Add a small delay to show the loading state
+        setTimeout(() => {
+            // Form will submit naturally after this
+        }, 500);
+    });
+    
+    // Focus on confirmation input when page loads
+    confirmText.focus();
+    
+    // Prevent accidental form submission with Enter key unless confirmed
+    confirmText.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            if (this.value.toUpperCase() === 'DELETE') {
+                deleteForm.dispatchEvent(new Event('submit'));
+            } else {
+                e.preventDefault();
+                alert('Please type "DELETE" to confirm deletion.');
+            }
+        }
+    });
+});
+
+// Warn user before leaving page if they've started typing
+window.addEventListener('beforeunload', function(e) {
+    const confirmText = document.getElementById('confirmText').value;
+    if (confirmText && confirmText.toUpperCase() !== 'DELETE') {
+        const message = 'You have started the deletion process. Are you sure you want to leave?';
+        e.returnValue = message;
+        return message;
+    }
+});
+</script>
+{% endblock %}

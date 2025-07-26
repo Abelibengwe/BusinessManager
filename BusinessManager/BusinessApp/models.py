@@ -194,3 +194,106 @@ class Notification(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+class ElectricalDevice(models.Model):
+    STATUS_CHOICES = [
+        ('working', 'Working'),
+        ('maintenance', 'Under Maintenance'),
+        ('repair', 'Needs Repair'),
+        ('damaged', 'Damaged'),
+        ('retired', 'Retired'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    model_number = models.CharField(max_length=100, blank=True)
+    serial_number = models.CharField(max_length=100, blank=True)
+    manufacturer = models.CharField(max_length=100, blank=True)
+    voltage_rating = models.CharField(max_length=50, blank=True)
+    power_rating = models.CharField(max_length=50, blank=True)
+    location = models.CharField(max_length=200, default='Main Office')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='working')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    purchase_date = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    last_maintenance = models.DateField(null=True, blank=True)
+    next_maintenance = models.DateField(null=True, blank=True)
+    maintenance_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.model_number}"
+    
+    @property
+    def is_due_maintenance(self):
+        if self.next_maintenance:
+            return timezone.now().date() >= self.next_maintenance
+        return False
+
+class ElectronicsDevice(models.Model):
+    STATUS_CHOICES = [
+        ('working', 'Working'),
+        ('maintenance', 'Under Maintenance'),
+        ('repair', 'Needs Repair'),
+        ('damaged', 'Damaged'),
+        ('retired', 'Retired'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    DEVICE_TYPES = [
+        ('computer', 'Computer'),
+        ('printer', 'Printer'),
+        ('scanner', 'Scanner'),
+        ('router', 'Router'),
+        ('switch', 'Switch'),
+        ('phone', 'Phone'),
+        ('tablet', 'Tablet'),
+        ('monitor', 'Monitor'),
+        ('projector', 'Projector'),
+        ('other', 'Other'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    device_type = models.CharField(max_length=20, choices=DEVICE_TYPES, default='other')
+    model_number = models.CharField(max_length=100, blank=True)
+    serial_number = models.CharField(max_length=100, blank=True)
+    manufacturer = models.CharField(max_length=100, blank=True)
+    operating_system = models.CharField(max_length=100, blank=True)
+    specifications = models.TextField(blank=True)
+    location = models.CharField(max_length=200, default='Main Office')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='working')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    purchase_date = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    last_maintenance = models.DateField(null=True, blank=True)
+    next_maintenance = models.DateField(null=True, blank=True)
+    maintenance_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    description = models.TextField(blank=True)
+    assigned_to = models.CharField(max_length=200, blank=True, help_text="Person or department assigned to")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.device_type}"
+    
+    @property
+    def is_due_maintenance(self):
+        if self.next_maintenance:
+            return timezone.now().date() >= self.next_maintenance
+        return False

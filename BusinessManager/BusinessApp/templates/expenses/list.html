@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Expenses - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .expenses-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .expenses-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        text-align: center;
+        box-shadow: var(--shadow-light);
+        transition: var(--transition);
+        border: 2px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+        border-color: var(--primary-color);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    
+    .expenses-table {
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+    }
+    
+    .table-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem;
+    }
+    
+    .expenses-actions {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .search-box {
+        max-width: 300px;
+        flex: 1;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+    
+    .category-card {
+        background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .expenses-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="expenses-container">
+    <!-- Page Header -->
+    <div class="expenses-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-money-bill-wave me-3"></i>Expense Management
+                </h1>
+                <p class="mb-0 opacity-75">Track and manage all your business expenses</p>
+            </div>
+            <a href="{% url 'expense_add' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-plus me-2"></i>New Expense
+            </a>
+        </div>
+    </div>
+    
+    <!-- Expense Statistics -->
+    <div class="expenses-stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_expenses_count|intcomma }}</div>
+            <div class="stat-label">Total Expenses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">Tsh {{ today_expenses|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Today's Expenses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">Tsh {{ month_expenses|floatformat:0|intcomma }}</div>
+            <div class="stat-label">This Month</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">Tsh {{ year_expenses|floatformat:0|intcomma }}</div>
+            <div class="stat-label">This Year</div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Expense Actions -->
+            <div class="expenses-actions">
+                <div class="search-box">
+                    <input type="text" class="form-control" placeholder="Search expenses by title, category, or amount..." id="expensesSearch">
+                </div>
+                <div class="action-buttons">
+                    <select class="form-select" id="filterCategory">
+                        <option value="">All Categories</option>
+                        {% for category in category_expenses %}
+                        <option value="{{ category.category__name }}">{{ category.category__name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select" id="filterPeriod">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Expenses Table -->
+            <div class="expenses-table">
+                <div class="table-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Expenses
+                    </h5>
+                </div>
+                
+                {% if expenses %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4 py-3">Title</th>
+                                <th class="px-4 py-3">Category</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Amount</th>
+                                <th class="px-4 py-3">Created By</th>
+                                <th class="px-4 py-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <div>
+                                        <strong>{{ expense.title }}</strong>
+                                        {% if expense.description %}
+                                            <small class="text-muted d-block">{{ expense.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="badge bg-primary">{{ expense.category.name }}</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div>
+                                        <strong>{{ expense.expense_date|date:"M d, Y" }}</strong>
+                                        <small class="text-muted d-block">{{ expense.created_at|time:"g:i A" }}</small>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <strong class="text-danger">Tsh {{ expense.amount|floatformat:0|intcomma }}</strong>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <small class="text-muted">{{ expense.created_by.username }}</small>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'expense_edit' expense.pk %}" class="btn btn-outline-primary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger" onclick="openDeleteModal('{{ expense.id }}', '{{ expense.title }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if expenses.has_other_pages %}
+                <div class="d-flex justify-content-between align-items-center p-4 border-top">
+                    <div class="text-muted">
+                        Showing {{ expenses.start_index }} to {{ expenses.end_index }} of {{ expenses.paginator.count }} expenses
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if expenses.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ expenses.previous_page_number }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in expenses.paginator.page_range %}
+                                {% if expenses.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > expenses.number|add:'-3' and num < expenses.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if expenses.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ expenses.next_page_number }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-money-bill-wave fa-4x text-muted"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">No Expenses Found</h4>
+                    <p class="text-muted mb-4">You haven't recorded any expenses yet. Start by adding your first expense!</p>
+                    <a href="{% url 'expense_add' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>Add First Expense
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Top Categories -->
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Top Categories (This Month)
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if category_expenses %}
+                        {% for category in category_expenses %}
+                        <div class="category-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ category.category__name|default:"Uncategorized" }}</strong>
+                                    <small class="text-muted d-block">{{ category.count }} expense{{ category.count|pluralize }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <strong class="text-danger">Tsh {{ category.total|floatformat:0|intcomma }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No expense categories found for this month.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Expense
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the expense "<strong id="expense_title_to_delete"></strong>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Expense
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('expensesSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+function openDeleteModal(expenseId, expenseTitle) {
+    document.getElementById('expense_title_to_delete').textContent = expenseTitle;
+    document.getElementById('deleteForm').action = `/expenses/${expenseId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

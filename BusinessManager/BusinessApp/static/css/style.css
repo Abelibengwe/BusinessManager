@@ -359,12 +359,12 @@ h1, h2, h3, h4, h5, h6 {
 /* Search Container - Collapsible */
 .search-container {
     position: relative;
-    max-width: 300px;
     transition: var(--transition);
+    margin-left: auto; /* Push search to the right */
 }
 
 .search-toggle {
-    padding: 0.75rem;
+    padding: 0.5rem !important;
     border-radius: var(--border-radius-sm);
     transition: var(--transition);
     color: #ffffff !important;
@@ -372,9 +372,7 @@ h1, h2, h3, h4, h5, h6 {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
     border: 2px solid rgba(255, 255, 255, 0.3);
     cursor: pointer;
-    font-size: 1.2rem;
     backdrop-filter: blur(10px);
-    font-weight: 700;
 }
 
 .search-toggle:hover {
@@ -386,6 +384,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .search-toggle i {
+    font-size: 1.2rem;
     color: #8b5cf6 !important; /* Purple for search */
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)) brightness(1.2);
     font-weight: 700;
@@ -399,9 +398,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Search toggle pressed state */
 .search-toggle:active {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     transform: scale(1.02);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
     color: #ffffff !important;
 }
 
@@ -575,7 +574,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Notification Bell */
 .notification-bell {
-    padding: 0.75rem;
+    padding: 0.5rem !important;
     border-radius: var(--border-radius-sm);
     transition: var(--transition);
     color: #ffffff !important;
@@ -956,11 +955,6 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-secondary);
 }
 
-/* ===== Search Bar ===== */
-.search-container {
-    position: relative;
-    width: 300px;
-}
 
 .search-input {
     background-color: var(--bg-tertiary);
@@ -2243,5 +2237,131 @@ h1, h2, h3, h4, h5, h6 {
     .modern-card {
         box-shadow: none !important;
         border: 1px solid #ccc !important;
+    }
+}
+
+/* ===== Enhanced Navbar Responsive Styles ===== */
+/* Large screens - show text only on XXL+ */
+@media (min-width: 1400px) {
+    .modern-nav-link span {
+        display: inline !important;
+    }
+}
+
+/* Extra large screens - show text */
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+    .modern-nav-link {
+        padding: 0.75rem 1rem;
+        margin: 0 0.125rem;
+    }
+    
+    .modern-nav-link span {
+        font-size: 0.875rem;
+    }
+}
+
+/* Large screens - icons only for nav items, text for user */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .modern-nav-link {
+        padding: 0.75rem 0.75rem;
+        margin: 0 0.125rem;
+        min-width: 44px;
+        justify-content: center;
+    }
+    
+    .modern-nav-link span {
+        display: none;
+    }
+    
+    .user-info {
+        display: none !important;
+    }
+    
+    .search-container {
+        max-width: 200px;
+    }
+    
+    /* Compact spacing for right side items */
+    .navbar-nav.ms-auto .nav-item {
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+    }
+}
+
+/* Medium screens - further optimizations */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .modern-navbar .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .modern-nav-link {
+        padding: 0.5rem;
+        margin: 0 0.125rem;
+        min-width: 40px;
+        justify-content: center;
+    }
+    
+    .modern-nav-link span {
+        display: none;
+    }
+    
+    .user-info {
+        display: none !important;
+    }
+    
+    .search-container {
+        max-width: 150px;
+    }
+    
+    /* Very compact spacing */
+    .navbar-nav.ms-auto .nav-item {
+        margin-left: 0.125rem;
+        margin-right: 0.125rem;
+    }
+    
+    .notification-bell,
+    .user-profile {
+        padding: 0.5rem;
+    }
+    
+    .user-avatar img {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Enhanced touch targets for mobile-first approach */
+@media (max-width: 767.98px) {
+    .modern-navbar {
+        padding: 0.75rem 0;
+    }
+    
+    .notification-bell,
+    .user-profile,
+    .search-toggle {
+        padding: 0.75rem;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .user-avatar img {
+        width: 26px;
+        height: 26px;
+    }
+}
+
+/* Ultra-wide screens - ensure proper spacing */
+@media (min-width: 1920px) {
+    .modern-nav-link {
+        padding: 0.75rem 1.5rem;
+        margin: 0 0.5rem;
+    }
+    
+    .search-container {
+        max-width: 400px;
     }
 }

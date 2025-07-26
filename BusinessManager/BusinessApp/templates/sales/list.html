@@ -104,19 +104,19 @@
     <!-- Sales Statistics -->
     <div class="sales-stats">
         <div class="stat-card">
-            <div class="stat-value">{{ sales.paginator.count }}</div>
+            <div class="stat-value">{{ total_sales|intcomma }}</div>
             <div class="stat-label">Total Sales</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">Tsh 0.00</div>
+            <div class="stat-value">Tsh {{ today_revenue|floatformat:0|intcomma }}</div>
             <div class="stat-label">Today's Revenue</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">Tsh 0.00</div>
+            <div class="stat-value">Tsh {{ month_revenue|floatformat:0|intcomma }}</div>
             <div class="stat-label">This Month</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">0</div>
+            <div class="stat-value">{{ pending_orders|intcomma }}</div>
             <div class="stat-label">Pending Orders</div>
         </div>
     </div>

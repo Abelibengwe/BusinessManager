@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Electronics Device{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">
+            <i class="fas fa-microchip text-info"></i>
+            Add Electronics Device
+        </h2>
+        <a href="{% url 'electronics_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Device Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="electronicsForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Device Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="device_type" class="form-label">Device Type</label>
+                                <select class="form-select" id="device_type" name="device_type">
+                                    {% for value, display in device_types %}
+                                        <option value="{{ value }}" {% if value == 'other' %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="model_number" class="form-label">Model Number</label>
+                                <input type="text" class="form-control" id="model_number" name="model_number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="serial_number" class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="manufacturer" class="form-label">Manufacturer</label>
+                                <input type="text" class="form-control" id="manufacturer" name="manufacturer">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="operating_system" class="form-label">Operating System</label>
+                                <input type="text" class="form-control" id="operating_system" name="operating_system" 
+                                       placeholder="e.g. Windows 11, macOS, Android">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="specifications" class="form-label">Specifications</label>
+                            <textarea class="form-control" id="specifications" name="specifications" rows="3" 
+                                      placeholder="Technical specifications (CPU, RAM, Storage, etc.)"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       value="Main Office">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assigned_to" class="form-label">Assigned To</label>
+                                <input type="text" class="form-control" id="assigned_to" name="assigned_to" 
+                                       placeholder="Person or department">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    {% for value, display in status_choices %}
+                                        <option value="{{ value }}" {% if value == 'working' %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    {% for value, display in priority_choices %}
+                                        <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="maintenance_cost" class="form-label">Maintenance Cost (Tsh)</label>
+                                <input type="number" class="form-control" id="maintenance_cost" name="maintenance_cost" 
+                                       min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="purchase_date" class="form-label">Purchase Date</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="warranty_expiry" class="form-label">Warranty Expiry</label>
+                                <input type="date" class="form-control" id="warranty_expiry" name="warranty_expiry">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="last_maintenance" class="form-label">Last Maintenance</label>
+                                <input type="date" class="form-control" id="last_maintenance" name="last_maintenance">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="next_maintenance" class="form-label">Next Maintenance</label>
+                                <input type="date" class="form-control" id="next_maintenance" name="next_maintenance">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                      placeholder="Additional notes about the device..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'electronics_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Device
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Preview</h6>
+                </div>
+                <div class="card-body">
+                    <div id="devicePreview">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-microchip fa-3x mb-3"></i>
+                            <p>Fill in the form to see a preview of your electronics device.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Device Types</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-desktop text-primary me-2"></i>Computer</li>
+                                <li><i class="fas fa-print text-secondary me-2"></i>Printer</li>
+                                <li><i class="fas fa-scanner text-info me-2"></i>Scanner</li>
+                                <li><i class="fas fa-wifi text-success me-2"></i>Router</li>
+                                <li><i class="fas fa-network-wired text-warning me-2"></i>Switch</li>
+                            </ul>
+                        </div>
+                        <div class="col-6">
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-phone text-danger me-2"></i>Phone</li>
+                                <li><i class="fas fa-tablet-alt text-primary me-2"></i>Tablet</li>
+                                <li><i class="fas fa-tv text-secondary me-2"></i>Monitor</li>
+                                <li><i class="fas fa-video text-info me-2"></i>Projector</li>
+                                <li><i class="fas fa-cogs text-muted me-2"></i>Other</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Quick Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>
+                            <small>Include complete specifications for better tracking</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-user text-info me-2"></i>
+                            <small>Assign devices to specific users or departments</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-success me-2"></i>
+                            <small>Set maintenance schedules for optimal performance</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-shield-alt text-primary me-2"></i>
+                            <small>Track warranty periods for service planning</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('electronicsForm');
+    const preview = document.getElementById('devicePreview');
+    
+    function updatePreview() {
+        const name = document.getElementById('name').value || 'Unnamed Device';
+        const deviceType = document.getElementById('device_type').value;
+        const model = document.getElementById('model_number').value || 'Unknown Model';
+        const manufacturer = document.getElementById('manufacturer').value || 'Unknown Manufacturer';
+        const status = document.getElementById('status').value;
+        const priority = document.getElementById('priority').value;
+        const location = document.getElementById('location').value || 'Unknown Location';
+        const assignedTo = document.getElementById('assigned_to').value || 'Unassigned';
+        const os = document.getElementById('operating_system').value || 'N/A';
+        
+        const deviceTypeDisplay = {
+            'computer': 'Computer',
+            'printer': 'Printer',
+            'scanner': 'Scanner',
+            'router': 'Router',
+            'switch': 'Switch',
+            'phone': 'Phone',
+            'tablet': 'Tablet',
+            'monitor': 'Monitor',
+            'projector': 'Projector',
+            'other': 'Other'
+        };
+        
+        const statusBadge = {
+            'working': '<span class="badge bg-success">Working</span>',
+            'maintenance': '<span class="badge bg-warning">Maintenance</span>',
+            'repair': '<span class="badge bg-danger">Needs Repair</span>',
+            'damaged': '<span class="badge bg-dark">Damaged</span>',
+            'retired': '<span class="badge bg-secondary">Retired</span>'
+        };
+        
+        const priorityBadge = {
+            'critical': '<span class="badge bg-danger">Critical</span>',
+            'high': '<span class="badge bg-warning">High</span>',
+            'medium': '<span class="badge bg-info">Medium</span>',
+            'low': '<span class="badge bg-secondary">Low</span>'
+        };
+        
+        preview.innerHTML = `
+            <div class="text-center mb-3">
+                <i class="fas fa-microchip fa-2x text-primary"></i>
+            </div>
+            <h6 class="text-center mb-3">${name}</h6>
+            <div class="mb-2">
+                <strong>Type:</strong> ${deviceTypeDisplay[deviceType]}
+            </div>
+            <div class="mb-2">
+                <strong>Model:</strong> ${model}
+            </div>
+            <div class="mb-2">
+                <strong>Manufacturer:</strong> ${manufacturer}
+            </div>
+            <div class="mb-2">
+                <strong>Location:</strong> ${location}
+            </div>
+            <div class="mb-2">
+                <strong>Assigned To:</strong> ${assignedTo}
+            </div>
+            <div class="mb-2">
+                <strong>OS:</strong> ${os}
+            </div>
+            <div class="mb-2">
+                <strong>Status:</strong> ${statusBadge[status]}
+            </div>
+            <div class="mb-2">
+                <strong>Priority:</strong> ${priorityBadge[priority]}
+            </div>
+        `;
+    }
+    
+    // Update preview on input change
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    // Initial preview update
+    updatePreview();
+});
+</script>
+{% endblock %}

@@ -33,6 +33,18 @@ urlpatterns = [
     path('projects/<int:pk>/edit/', views.project_edit, name='project_edit'),
     path('projects/<int:pk>/delete/', views.project_delete, name='project_delete'),
     
+    # Electrical Maintenance
+    path('electrical/', views.electrical_list, name='electrical_list'),
+    path('electrical/add/', views.electrical_add, name='electrical_add'),
+    path('electrical/<int:pk>/edit/', views.electrical_edit, name='electrical_edit'),
+    path('electrical/<int:pk>/delete/', views.electrical_delete, name='electrical_delete'),
+    
+    # Electronics Maintenance
+    path('electronics/', views.electronics_list, name='electronics_list'),
+    path('electronics/add/', views.electronics_add, name='electronics_add'),
+    path('electronics/<int:pk>/edit/', views.electronics_edit, name='electronics_edit'),
+    path('electronics/<int:pk>/delete/', views.electronics_delete, name='electronics_delete'),
+    
     # Stock Management
     path('stock/', views.stock_in_list, name='stock_in_list'),
     path('stock/movement/', views.stock_movement, name='stock_movement'),

@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Add Expense - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .add-expense-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .expense-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .required-field {
+        color: #dc3545;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+    }
+    
+    .btn-modern {
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .expense-preview {
+        background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="add-expense-container">
+    <!-- Page Header -->
+    <div class="expense-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-plus-circle me-3"></i>Add New Expense
+                </h1>
+                <p class="mb-0 opacity-75">Record a new business expense</p>
+            </div>
+            <a href="{% url 'expense_list' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Expenses
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Expense Form -->
+            <div class="form-section">
+                <h4 class="form-section-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>Expense Details
+                </h4>
+                
+                <form method="POST" id="expenseForm">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="title" class="form-label">
+                                Expense Title <span class="required-field">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Office Rent, Equipment Purchase" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="amount" class="form-label">
+                                Amount (Tsh) <span class="required-field">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">
+                                Category <span class="required-field">*</span>
+                            </label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.name }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    Don't see your category? Type a new one and it will be created automatically.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="expense_date" class="form-label">
+                                Expense Date <span class="required-field">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="expense_date" name="expense_date" 
+                                   value="{{ today|date:'Y-m-d' }}" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Additional notes or description about this expense..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-modern btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Expense
+                        </button>
+                        <a href="{% url 'expense_list' %}" class="btn btn-modern btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="button" class="btn btn-modern btn-info" onclick="clearForm()">
+                            <i class="fas fa-eraser me-2"></i>Clear Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Expense Preview -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-eye me-2"></i>Expense Preview
+                </h5>
+                
+                <div class="expense-preview">
+                    <div class="mb-3">
+                        <strong>Title:</strong>
+                        <div id="preview-title" class="text-muted">Not specified</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Amount:</strong>
+                        <div id="preview-amount" class="text-danger fs-5">Tsh 0.00</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Category:</strong>
+                        <div id="preview-category" class="text-muted">Not selected</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Date:</strong>
+                        <div id="preview-date" class="text-muted">{{ today|date:'M d, Y' }}</div>
+                    </div>
+                    
+                    <div>
+                        <strong>Description:</strong>
+                        <div id="preview-description" class="text-muted">No description</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Categories -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-tags me-2"></i>Quick Categories
+                </h5>
+                
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Office Rent')">
+                        Office Rent
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Utilities')">
+                        Utilities
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Equipment')">
+                        Equipment
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Marketing')">
+                        Marketing
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Travel')">
+                        Travel
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Supplies')">
+                        Supplies
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Insurance')">
+                        Insurance
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectCategory('Professional Services')">
+                        Professional Services
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recent Expenses -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-clock me-2"></i>Recent Expenses
+                </h5>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <small class="text-muted">No recent expenses</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('expense_date').value = today;
+    
+    // Real-time preview updates
+    document.getElementById('title').addEventListener('input', function() {
+        const value = this.value || 'Not specified';
+        document.getElementById('preview-title').textContent = value;
+    });
+    
+    document.getElementById('amount').addEventListener('input', function() {
+        const value = parseFloat(this.value) || 0;
+        document.getElementById('preview-amount').textContent = 'Tsh ' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    });
+    
+    document.getElementById('category').addEventListener('change', function() {
+        const value = this.value || 'Not selected';
+        document.getElementById('preview-category').textContent = value;
+    });
+    
+    document.getElementById('expense_date').addEventListener('change', function() {
+        if (this.value) {
+            const date = new Date(this.value);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('preview-date').textContent = date.toLocaleDateString('en-US', options);
+        }
+    });
+    
+    document.getElementById('description').addEventListener('input', function() {
+        const value = this.value || 'No description';
+        document.getElementById('preview-description').textContent = value;
+    });
+    
+    // Form validation
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+        const amount = parseFloat(document.getElementById('amount').value);
+        
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid amount greater than 0.');
+            document.getElementById('amount').focus();
+            return false;
+        }
+        
+        const title = document.getElementById('title').value.trim();
+        if (title.length < 3) {
+            e.preventDefault();
+            alert('Please enter a more descriptive title (at least 3 characters).');
+            document.getElementById('title').focus();
+            return false;
+        }
+    });
+});
+
+function selectCategory(categoryName) {
+    document.getElementById('category').value = categoryName;
+    document.getElementById('preview-category').textContent = categoryName;
+    
+    // If category doesn't exist in the dropdown, add it
+    const categorySelect = document.getElementById('category');
+    let optionExists = false;
+    
+    for (let i = 0; i < categorySelect.options.length; i++) {
+        if (categorySelect.options[i].value === categoryName) {
+            optionExists = true;
+            break;
+        }
+    }
+    
+    if (!optionExists) {
+        const option = new Option(categoryName, categoryName);
+        categorySelect.add(option);
+        categorySelect.value = categoryName;
+    }
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form data?')) {
+        document.getElementById('expenseForm').reset();
+        document.getElementById('preview-title').textContent = 'Not specified';
+        document.getElementById('preview-amount').textContent = 'Tsh 0.00';
+        document.getElementById('preview-category').textContent = 'Not selected';
+        document.getElementById('preview-description').textContent = 'No description';
+        
+        // Reset date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('expense_date').value = today;
+        
+        // Focus on first field
+        document.getElementById('title').focus();
+    }
+}
+</script>
+{% endblock %}

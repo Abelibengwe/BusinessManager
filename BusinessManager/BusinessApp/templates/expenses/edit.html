@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Edit Expense - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-expense-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .expense-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .required-field {
+        color: #dc3545;
+    }
+    
+    .expense-info {
+        background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-expense-container">
+    <!-- Page Header -->
+    <div class="expense-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-edit me-3"></i>Edit Expense
+                </h1>
+                <p class="mb-0 opacity-75">Update expense details</p>
+            </div>
+            <a href="{% url 'expense_list' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Expenses
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Expense Form -->
+            <div class="form-section">
+                <h4 class="form-section-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>Expense Details
+                </h4>
+                
+                <form method="POST" id="expenseForm">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="title" class="form-label">
+                                Expense Title <span class="required-field">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ expense.title }}" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="amount" class="form-label">
+                                Amount (Tsh) <span class="required-field">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="0.01" min="0" value="{{ expense.amount }}" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">
+                                Category <span class="required-field">*</span>
+                            </label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.name }}" {% if category == expense.category %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="expense_date" class="form-label">
+                                Expense Date <span class="required-field">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="expense_date" name="expense_date" 
+                                   value="{{ expense.expense_date|date:'Y-m-d' }}" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3">{{ expense.description }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-modern btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Expense
+                        </button>
+                        <a href="{% url 'expense_list' %}" class="btn btn-modern btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="button" class="btn btn-modern btn-danger" onclick="openDeleteModal()">
+                            <i class="fas fa-trash me-2"></i>Delete Expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Expense Information -->
+            <div class="form-section">
+                <h5 class="form-section-title">
+                    <i class="fas fa-info-circle me-2"></i>Expense Information
+                </h5>
+                
+                <div class="expense-info">
+                    <div class="mb-3">
+                        <strong>Created:</strong>
+                        <div class="text-muted">{{ expense.created_at|date:"M d, Y g:i A" }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Created By:</strong>
+                        <div class="text-muted">{{ expense.created_by.username }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Current Amount:</strong>
+                        <div class="text-danger fs-5">Tsh {{ expense.amount|floatformat:2|intcomma }}</div>
+                    </div>
+                    
+                    <div>
+                        <strong>Current Category:</strong>
+                        <span class="badge bg-primary">{{ expense.category.name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Expense
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the expense "<strong>{{ expense.title }}</strong>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'expense_delete' expense.pk %}" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Expense
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+        const amount = parseFloat(document.getElementById('amount').value);
+        
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid amount greater than 0.');
+            document.getElementById('amount').focus();
+            return false;
+        }
+        
+        const title = document.getElementById('title').value.trim();
+        if (title.length < 3) {
+            e.preventDefault();
+            alert('Please enter a more descriptive title (at least 3 characters).');
+            document.getElementById('title').focus();
+            return false;
+        }
+    });
+});
+
+function openDeleteModal() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
