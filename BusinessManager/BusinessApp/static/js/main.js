@@ -40,6 +40,9 @@ function initializeNavigation() {
         closeMobileSidebar();
     });
     
+    // Mobile dropdown positioning
+    initializeMobileDropdowns();
+    
     // Close sidebar when clicking outside
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#mobileSidebar, .navbar-toggler').length) {
@@ -66,14 +69,25 @@ function initializeNavigation() {
         }
     });
     
-    // Smooth scrolling for anchor links
-    $('a[href^="#"]').on('click', function(e) {
+    // Smooth scrolling for anchor links (only for valid internal links)
+    $('a[href^="#"]:not([href="#"]):not([data-bs-toggle]):not([role="button"])').on('click', function(e) {
+        const href = this.getAttribute('href');
+        
+        // Skip if href is just "#" or empty or less than 2 characters
+        if (!href || href === '#' || href.length <= 1) {
+            return;
+        }
+        
         e.preventDefault();
-        const target = $(this.getAttribute('href'));
-        if (target.length) {
-            $('html, body').stop().animate({
-                scrollTop: target.offset().top - 80
-            }, 600);
+        try {
+            const target = $(href);
+            if (target.length) {
+                $('html, body').stop().animate({
+                    scrollTop: target.offset().top - 80
+                }, 600);
+            }
+        } catch (error) {
+            console.warn('Invalid selector for smooth scroll:', href);
         }
     });
 }
@@ -100,6 +114,55 @@ function closeMobileSidebar() {
     $('#mobileSidebar').removeClass('active');
     $('#sidebarOverlay').removeClass('active');
     $('body').removeClass('sidebar-open');
+}
+
+// Mobile Dropdown Functions
+function initializeMobileDropdowns() {
+    // Handle responsive dropdown positioning for all screen sizes
+    $(document).on('show.bs.dropdown', '.dropdown', function() {
+        const $dropdown = $(this);
+        const $menu = $dropdown.find('.dropdown-menu');
+        const screenWidth = window.innerWidth;
+        
+        // Apply different positioning based on screen size
+        if (screenWidth <= 768) {
+            // Mobile positioning - fixed to top right
+            $menu.css({
+                'position': 'fixed',
+                'top': '65px',
+                'right': '10px',
+                'left': 'auto',
+                'transform': 'none',
+                'margin': '0',
+                'z-index': '1060'
+            });
+            
+            // Adjust for very small screens
+            if (screenWidth <= 576) {
+                $menu.css('right', '5px');
+            }
+        } else if (screenWidth <= 991) {
+            // Tablet positioning - better dropdown sizing
+            $menu.css({
+                'min-width': '280px',
+                'max-width': 'calc(100vw - 20px)',
+                'z-index': '1055'
+            });
+        }
+        // Desktop uses default Bootstrap positioning
+    });
+    
+    // Ensure dropdowns stay visible
+    $(document).on('shown.bs.dropdown', '.dropdown', function() {
+        const $menu = $(this).find('.dropdown-menu');
+        $menu.addClass('show');
+    });
+    
+    // Handle window resize
+    $(window).on('resize', function() {
+        $('.dropdown.show').removeClass('show');
+        $('.dropdown-menu.show').removeClass('show');
+    });
 }
 
 function toggleSidebar() {
@@ -1024,8 +1087,11 @@ function hideLoading() {
 
 // ===== Error Handling =====
 window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
-    // showNotification('error', 'An unexpected error occurred. Please try again.');
+    // Only log meaningful errors, skip null/empty errors
+    if (e.error && e.error.message && e.error.message !== 'null') {
+        console.error('Global error:', e.error);
+        // showNotification('error', 'An unexpected error occurred. Please try again.');
+    }
 });
 
 // ===== Service Worker Registration (for PWA capabilities) - Temporarily disabled =====

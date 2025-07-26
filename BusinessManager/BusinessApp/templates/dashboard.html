@@ -90,7 +90,7 @@
                 </div>
                 <div class="modern-card-body">
                     <div class="row text-center">
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <div class="border-end">
                                 <h4 class="text-success">Tsh {{ total_revenue|floatformat:0|intcomma|default:0 }}</h4>
                                 <small class="text-muted">Total Revenue</small>
@@ -99,7 +99,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <div class="border-end">
                                 <h4 class="text-warning">Tsh {{ total_cogs|floatformat:0|intcomma|default:0 }}</h4>
                                 <small class="text-muted">Cost of Goods Sold</small>
@@ -108,7 +108,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <div class="border-end">
                                 <h4 class="text-info">Tsh {{ gross_profit|floatformat:0|intcomma|default:0 }}</h4>
                                 <small class="text-muted">Gross Profit</small>
@@ -117,7 +117,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <div class="border-end">
                                 <h4 class="text-danger">Tsh {{ total_expenses|floatformat:0|intcomma|default:0 }}</h4>
                                 <small class="text-muted">Operating Expenses</small>
@@ -126,7 +126,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <div class="border-end">
                                 <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
                                     Tsh {{ net_profit|floatformat:0|intcomma|default:0 }}
@@ -139,11 +139,168 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-md-4 col-sm-6 col-12">
                             <h4 class="text-primary">{{ total_sales|intcomma|default:0 }}</h4>
                             <small class="text-muted">Total Sales</small>
                             <div class="mt-1">
                                 <span class="badge bg-primary">Transactions</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>Services Overview
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ total_services_devices|default:0 }}</h4>
+                                <small class="text-muted">Total Devices</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-primary">All Services</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <div class="border-end">
+                                <h4 class="text-success">{{ total_working_devices|default:0 }}</h4>
+                                <small class="text-muted">Working Devices</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-success">{{ services_uptime|floatformat:1 }}% Uptime</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <div class="border-end">
+                                <h4 class="text-warning">{{ total_maintenance_devices|default:0 }}</h4>
+                                <small class="text-muted">In Maintenance</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-warning">Service Required</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <div class="border-end">
+                                <h4 class="text-danger">{{ total_critical_devices|default:0 }}</h4>
+                                <small class="text-muted">Critical Priority</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-danger">High Priority</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <div class="border-end">
+                                <h4 class="text-info">{{ total_due_maintenance|default:0 }}</h4>
+                                <small class="text-muted">Due Maintenance</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-info">Scheduled</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <h4 class="text-primary">{{ total_active_projects|default:0 }}</h4>
+                            <small class="text-muted">Active Projects</small>
+                            <div class="mt-1">
+                                <span class="badge bg-primary">Running</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Budget Breakdown -->
+                    <div class="row mt-4">
+                        <div class="col-lg-4 col-md-6 col-12">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-3">
+                                <div>
+                                    <i class="fas fa-bolt text-warning me-2"></i>
+                                    <strong>Electrical Budget</strong>
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="mb-0 text-warning">Tsh {{ electrical_maintenance_cost|floatformat:0|intcomma|default:0 }}</h5>
+                                    <div class="small text-muted">Maintenance Cost</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-12">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-3">
+                                <div>
+                                    <i class="fas fa-microchip text-info me-2"></i>
+                                    <strong>Electronics Budget</strong>
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="mb-0 text-info">Tsh {{ electronics_maintenance_cost|floatformat:0|intcomma|default:0 }}</h5>
+                                    <div class="small text-muted">Maintenance Cost</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-12 col-12">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-3">
+                                <div>
+                                    <i class="fas fa-project-diagram text-primary me-2"></i>
+                                    <strong>Projects Budget</strong>
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="mb-0 text-primary">Tsh {{ active_projects_budget|floatformat:0|intcomma|default:0 }}</h5>
+                                    <div class="small text-muted">Active Projects</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Device Count Breakdown -->
+                    <div class="row mt-3">
+                        <div class="col-md-6 col-12">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                                <div>
+                                    <i class="fas fa-bolt text-warning me-2"></i>
+                                    <strong>Electrical Devices</strong>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning">{{ total_electrical_devices|default:0 }}</span>
+                                    <div class="small text-muted">Devices</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-12">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                                <div>
+                                    <i class="fas fa-microchip text-info me-2"></i>
+                                    <strong>Electronics Devices</strong>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-info">{{ total_electronics_devices|default:0 }}</span>
+                                    <div class="small text-muted">Devices</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Links -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="{% url 'electrical_list' %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-bolt me-1"></i> Electrical
+                                </a>
+                                <a href="{% url 'electronics_list' %}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-microchip me-1"></i> Electronics
+                                </a>
+                                <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-project-diagram me-1"></i> Projects
+                                </a>
+                                <a href="{% url 'electrical_add' %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-plus me-1"></i> Add Device
+                                </a>
                             </div>
                         </div>
                     </div>

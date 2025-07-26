@@ -659,29 +659,42 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ===== Custom Navbar Toggler ===== */
 .custom-toggler {
-    border: none;
-    background: none;
-    width: 30px;
-    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+    width: 35px;
+    height: 35px;
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
+    justify-content: center;
     cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.custom-toggler:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 1);
 }
 
 .custom-toggler span {
     display: block;
     height: 2px;
-    width: 100%;
-    background-color: var(--text-primary);
+    width: 20px;
+    background-color: #ffffff;
     border-radius: 1px;
-    transition: var(--transition);
+    transition: all 0.2s ease;
+    margin: 2px auto;
 }
 
 .custom-toggler:focus {
     outline: none;
-    box-shadow: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.custom-toggler:active {
+    transform: scale(0.98);
 }
 
 /* ===== Mobile Sidebar ===== */
@@ -1023,6 +1036,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .notification-item {
     border-bottom: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+
+.notification-item:hover {
+    background-color: var(--bg-tertiary);
 }
 
 .notification-item:last-child {
@@ -1031,6 +1049,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .notification-content {
     flex: 1;
+    padding: 0.25rem 0;
 }
 
 .notification-title {
@@ -1038,17 +1057,37 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
 }
 
 .notification-text {
     color: var(--text-secondary);
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
+    line-height: 1.4;
 }
 
 .notification-time {
     color: var(--text-muted);
     font-size: 0.625rem;
+}
+
+/* Notification type specific styling */
+.notification-item.error {
+    border-left: 4px solid var(--danger-color);
+}
+
+.notification-item.warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.notification-item.success {
+    border-left: 4px solid var(--success-color);
+}
+
+.notification-item.info {
+    border-left: 4px solid var(--info-color);
 }
 
 /* ===== User Profile Dropdown ===== */
@@ -2006,7 +2045,61 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* Responsive dropdown improvements */
+@media (max-width: 991px) {
+    /* Medium screens and below - improve dropdown positioning */
+    .dropdown-menu {
+        min-width: 280px !important;
+        max-width: calc(100vw - 20px) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        z-index: 1055 !important;
+    }
+    
+    .notification-dropdown {
+        min-width: 320px !important;
+    }
+    
+    .user-dropdown {
+        min-width: 250px !important;
+    }
+}
+
 @media (max-width: 768px) {
+    /* Mobile specific dropdown positioning */
+    .d-lg-none .dropdown-menu {
+        position: fixed !important;
+        top: 65px !important;
+        right: 10px !important;
+        left: auto !important;
+        transform: none !important;
+        margin: 0 !important;
+        z-index: 1060 !important;
+    }
+    
+    .d-lg-none .notification-dropdown {
+        min-width: 300px !important;
+        max-width: calc(100vw - 20px) !important;
+        display: block !important; /* Force display */
+    }
+    
+    .d-lg-none .notification-item {
+        display: block !important; /* Force notification items to display */
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .d-lg-none .notification-content {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .d-lg-none .user-dropdown {
+        min-width: 260px !important;
+        max-width: calc(100vw - 20px) !important;
+    }
+    
     /* Hide main navigation on mobile - use sidebar instead */
     .navbar-nav.me-auto {
         display: none !important;
@@ -2057,6 +2150,316 @@ h1, h2, h3, h4, h5, h6 {
     .mobile-sidebar {
         width: 250px;
     }
+    
+    /* Dashboard responsive fixes */
+    .dashboard-container {
+        padding: 0.5rem;
+    }
+    
+    /* Mobile navbar layout fixes */
+    .modern-navbar .container-fluid {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+    
+    /* Mobile notifications and profile styling */
+    .d-flex.d-lg-none {
+        display: flex !important;
+        align-items: center;
+        order: 2;
+    }
+    
+    .custom-toggler {
+        order: 3;
+        margin-left: 0.5rem;
+    }
+    
+    .navbar-brand {
+        order: 1;
+        flex-shrink: 0;
+    }
+    
+    /* Mobile notification bell styling */
+    .d-lg-none .notification-bell {
+        color: white;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background-color 0.2s ease;
+    }
+    
+    .d-lg-none .notification-bell:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Mobile user profile styling */
+    .d-lg-none .user-profile {
+        padding: 0.25rem;
+    }
+    
+    .d-lg-none .user-avatar img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Mobile navbar container */
+    .d-flex.d-lg-none.align-items-center {
+        position: relative;
+        z-index: 1050;
+        gap: 0.5rem;
+    }
+    
+    /* Mobile nav items */
+    .d-lg-none .nav-item {
+        position: relative;
+    }
+    
+    /* Mobile dropdown positioning */
+    .d-lg-none .dropdown-menu {
+        position: absolute !important;
+        right: 0 !important;
+        left: auto !important;
+        top: 100% !important;
+        transform: none !important;
+        margin-top: 0.25rem !important;
+        min-width: 280px !important;
+        max-width: 90vw !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        z-index: 1055 !important;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95) !important;
+    }
+    
+    /* Mobile navbar right container */
+    .d-flex.d-lg-none.align-items-center.ms-auto {
+        position: relative;
+        z-index: 1050;
+        gap: 0.25rem;
+    }
+    
+    /* Mobile nav items - static positioning */
+    .d-lg-none .nav-item {
+        position: static !important;
+    }
+    
+    /* Override dropdown positioning for mobile */
+    .d-lg-none .dropdown-menu {
+        position: fixed !important;
+        top: 65px !important;
+        right: 10px !important;
+        left: auto !important;
+        transform: none !important;
+        margin: 0 !important;
+        min-width: 300px !important;
+        max-width: calc(100vw - 20px) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25) !important;
+        z-index: 1060 !important;
+        border: none !important;
+        background: white !important;
+    }
+    
+    /* Mobile notification dropdown */
+    .d-lg-none .notification-dropdown {
+        min-width: 320px !important;
+    }
+    
+    /* Mobile user dropdown */
+    .d-lg-none .user-dropdown {
+        min-width: 280px !important;
+    }
+    
+    /* Mobile nav links */
+    .d-lg-none .nav-link {
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        position: relative;
+    }
+    
+    .d-lg-none .nav-link:hover,
+    .d-lg-none .nav-link:focus {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #2563eb;
+    }
+    
+    /* Mobile user avatar and notification bell */
+    .d-lg-none .user-avatar img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #e5e7eb;
+    }
+    
+    .d-lg-none .notification-bell i {
+        font-size: 1.1rem;
+        color: #6b7280;
+    }
+    
+    .d-lg-none .notification-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        border: 2px solid white;
+    }
+    
+    /* Mobile notification dropdown specific styling */
+    .d-lg-none .notification-dropdown {
+        min-width: 320px !important;
+        max-width: 95vw !important;
+    }
+    
+    /* Mobile user dropdown specific styling */
+    .d-lg-none .user-dropdown {
+        min-width: 250px !important;
+        max-width: 90vw !important;
+    }
+    
+    /* Ensure dropdowns don't overflow screen */
+    .d-lg-none .dropdown {
+        position: relative;
+    }
+    
+    /* Mobile dropdown items */
+    .d-lg-none .dropdown-item {
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+    
+    /* Mobile notification items */
+    .d-lg-none .notification-item {
+        padding: 1rem !important;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .d-lg-none .notification-item:last-of-type {
+        border-bottom: none;
+    }
+    
+    /* Mobile notification content */
+    .d-lg-none .notification-content {
+        line-height: 1.4;
+    }
+    
+    .d-lg-none .notification-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+    }
+    
+    .d-lg-none .notification-text {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+    
+    .d-lg-none .notification-time {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    
+    /* Mobile dropdown header */
+    .d-lg-none .dropdown-header {
+        padding: 1rem !important;
+        font-weight: 600;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    /* Mobile user dropdown header */
+    .d-lg-none .user-dropdown-header {
+        padding: 1rem !important;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .d-lg-none .user-info-full {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .d-lg-none .user-info-full img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+    
+    /* Services Overview - stack items properly on mobile */
+    .row.text-center .col-md-2 {
+        margin-bottom: 1rem;
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+    }
+    
+    .row.text-center .col-md-2:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    /* Budget breakdown - make full width on mobile */
+    .row .col-md-4 {
+        margin-bottom: 1rem;
+    }
+    
+    /* Device count - stack vertically */
+    .row .col-md-6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Button groups - make responsive */
+    .d-flex.gap-2 {
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+    }
+    
+    .btn-sm {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Cards spacing */
+    .modern-card {
+        margin-bottom: 1rem;
+    }
+    
+    .modern-card-body {
+        padding: 1rem;
+    }
+    
+    /* Financial summary responsive */
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .border-end:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0;
+    }
 }
 
 @media (max-width: 576px) {
@@ -2068,6 +2471,23 @@ h1, h2, h3, h4, h5, h6 {
     
     .brand-text {
         display: none;
+    }
+    
+    /* Very small screen dropdown adjustments */
+    .d-lg-none .dropdown-menu {
+        right: 5px !important;
+        min-width: 280px !important;
+        max-width: calc(100vw - 10px) !important;
+    }
+    
+    .d-lg-none .notification-dropdown {
+        min-width: 300px !important;
+        max-width: calc(100vw - 10px) !important;
+    }
+    
+    .d-lg-none .user-dropdown {
+        min-width: 260px !important;
+        max-width: calc(100vw - 10px) !important;
     }
     
     /* Make buttons and notifications touch-friendly */
@@ -2119,6 +2539,90 @@ h1, h2, h3, h4, h5, h6 {
     
     .modern-form {
         padding: 1rem;
+    }
+    
+    /* Dashboard specific improvements */
+    .dashboard-container {
+        padding: 0.25rem;
+    }
+    
+    /* Stat cards - single column */
+    .col-xl-3.col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    /* Services overview - better spacing */
+    .row.text-center .col-md-2 {
+        padding: 1rem 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Budget cards - better mobile layout */
+    .row .col-md-4 {
+        margin-bottom: 0.75rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.p-3 {
+        padding: 0.75rem !important;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.p-3 .text-end {
+        text-align: center !important;
+        margin-top: 0.5rem;
+    }
+    
+    /* Device count cards */
+    .d-flex.justify-content-between.align-items-center.p-2 {
+        padding: 0.75rem !important;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.p-2 .text-end {
+        text-align: center !important;
+        margin-top: 0.5rem;
+    }
+    
+    /* Button groups - stack on very small screens */
+    .d-flex.gap-2.justify-content-center {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .d-flex.gap-2.justify-content-center .btn {
+        width: 100%;
+        max-width: 200px;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Header buttons */
+    .d-flex.gap-2:not(.justify-content-center) {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .d-flex.gap-2:not(.justify-content-center) .btn {
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Quick actions grid */
+    .d-grid.gap-3 .btn {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Chart container */
+    .col-xl-8 {
+        margin-bottom: 1rem;
+    }
+    
+    /* Financial summary - better mobile stacking */
+    .modern-card-body .row.text-center .col-md-2 {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
     }
 }
 

@@ -1,81 +1,233 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load humanize %}
 
-{% block title %}Electrical Maintenance{% endblock %}
+{% block title %}Electrical Maintenance - BK-Pro Business Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .electrical-container {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .electrical-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        border-left: 4px solid;
+        transition: all var(--transition-speed);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stats-card.total { border-left-color: var(--primary-color); }
+    .stats-card.working { border-left-color: #4caf50; }
+    .stats-card.maintenance { border-left-color: #ff9800; }
+    .stats-card.critical { border-left-color: #f44336; }
+    .stats-card.due-maintenance { border-left-color: #2196f3; }
+    
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .search-section {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .electrical-table {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        margin: 0;
+    }
+    
+    .device-row {
+        transition: background-color var(--transition-speed);
+        cursor: pointer;
+    }
+    
+    .device-row:hover {
+        background-color: rgba(255, 152, 0, 0.05);
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 80px;
+    }
+    
+    .status-working { background-color: #e8f5e8; color: #388e3c; }
+    .status-maintenance { background-color: #fff3e0; color: #f57c00; }
+    .status-repair { background-color: #fce4ec; color: #c2185b; }
+    .status-faulty { background-color: #ffebee; color: #d32f2f; }
+    
+    .priority-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: var(--border-radius);
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .priority-low { background-color: #e3f2fd; color: #1976d2; }
+    .priority-medium { background-color: #fff3e0; color: #f57c00; }
+    .priority-high { background-color: #fce4ec; color: #c2185b; }
+    .priority-critical { background-color: #ffebee; color: #d32f2f; }
+    
+    .device-actions {
+        opacity: 0;
+        transition: opacity var(--transition-speed);
+    }
+    
+    .device-row:hover .device-actions {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary">
-            <i class="fas fa-bolt text-warning"></i>
-            Electrical Maintenance
-        </h2>
-        <a href="{% url 'electrical_add' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add Device
-        </a>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card text-center border-primary">
-                <div class="card-body">
-                    <i class="fas fa-microchip fa-2x text-primary mb-2"></i>
-                    <h5 class="card-title">{{ total_devices|intcomma }}</h5>
-                    <p class="card-text text-muted">Total Devices</p>
+<div class="page-content electrical-container">
+    <div class="container-fluid">
+        <!-- Header Section -->
+        <div class="electrical-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-bolt me-3"></i>Electrical Maintenance
+                    </h1>
+                    <p class="mb-0 opacity-75">Monitor and maintain electrical devices</p>
+                </div>
+                <a href="{% url 'electrical_add' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>Add Device
+                </a>
+            </div>
+        </div>
+        
+        <!-- Device Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="stats-card total">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon" style="background: var(--primary-color);">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="fs-4 fw-bold text-primary">{{ total_devices }}</div>
+                            <div class="text-muted small">Total Devices</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="stats-card working">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon" style="background: #4caf50;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="fs-4 fw-bold text-success">{{ working_devices }}</div>
+                            <div class="text-muted small">Working</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="stats-card maintenance">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon" style="background: #ff9800;">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="fs-4 fw-bold" style="color: #ff9800;">{{ maintenance_devices }}</div>
+                            <div class="text-muted small">In Maintenance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="stats-card critical">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon" style="background: #f44336;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="fs-4 fw-bold text-danger">{{ critical_devices }}</div>
+                            <div class="text-muted small">Critical</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="stats-card due-maintenance">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon" style="background: #2196f3;">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="fs-4 fw-bold text-info">{{ due_maintenance }}</div>
+                            <div class="text-muted small">Due Maintenance</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                    <h5 class="card-title">{{ working_devices|intcomma }}</h5>
-                    <p class="card-text text-muted">Working</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center border-warning">
-                <div class="card-body">
-                    <i class="fas fa-tools fa-2x text-warning mb-2"></i>
-                    <h5 class="card-title">{{ maintenance_devices|intcomma }}</h5>
-                    <p class="card-text text-muted">Maintenance</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center border-danger">
-                <div class="card-body">
-                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
-                    <h5 class="card-title">{{ critical_devices|intcomma }}</h5>
-                    <p class="card-text text-muted">Critical</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center border-info">
-                <div class="card-body">
-                    <i class="fas fa-calendar-alt fa-2x text-info mb-2"></i>
-                    <h5 class="card-title">{{ due_maintenance|intcomma }}</h5>
-                    <p class="card-text text-muted">Due Maintenance</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Search and Filter -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
+        
+        <!-- Search and Filter Section -->
+        <div class="search-section">
+            <form method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label">Search</label>
-                    <input type="text" class="form-control" name="search" value="{{ search_query }}" 
+                    <label for="search" class="form-label">
+                        <i class="fas fa-search me-1"></i>Search Devices
+                    </label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" 
                            placeholder="Search by name, model, serial number...">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select class="form-select" name="status">
+                
+                <div class="col-md-3">
+                    <label for="status" class="form-label">
+                        <i class="fas fa-filter me-1"></i>Filter by Status
+                    </label>
+                    <select class="form-select" id="status" name="status">
                         <option value="">All Status</option>
                         {% for value, display in status_choices %}
                             <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
@@ -84,9 +236,12 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Priority</label>
-                    <select class="form-select" name="priority">
+                
+                <div class="col-md-3">
+                    <label for="priority" class="form-label">
+                        <i class="fas fa-flag me-1"></i>Filter by Priority
+                    </label>
+                    <select class="form-select" id="priority" name="priority">
                         <option value="">All Priorities</option>
                         {% for value, display in priority_choices %}
                             <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>
@@ -95,104 +250,105 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-outline-primary">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-grid">
-                        <a href="{% url 'electrical_list' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times"></i> Clear
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Devices Table -->
-    <div class="card">
-        <div class="card-body">
+                
+        
+        <!-- Devices Table -->
+        <div class="electrical-table">
+            <div class="table-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Electrical Devices
+                </h5>
+            </div>
+            
             {% if devices %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-dark">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th>Device Name</th>
+                                <th class="ps-4">Device</th>
                                 <th>Model/Serial</th>
-                                <th>Manufacturer</th>
                                 <th>Location</th>
                                 <th>Status</th>
                                 <th>Priority</th>
                                 <th>Power Rating</th>
                                 <th>Maintenance Cost</th>
                                 <th>Next Maintenance</th>
-                                <th>Actions</th>
+                                <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for device in devices %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ device.name }}</strong>
-                                        {% if device.is_due_maintenance %}
-                                            <span class="badge bg-warning ms-2">Due Maintenance</span>
-                                        {% endif %}
+                                <tr class="device-row">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="device-icon me-3">
+                                                <i class="fas fa-bolt text-warning fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ device.name }}</div>
+                                                <small class="text-muted">{{ device.manufacturer|default:"Unknown manufacturer" }}</small>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <small class="text-muted">{{ device.model_number|default:"-" }}</small><br>
-                                        <small>{{ device.serial_number|default:"-" }}</small>
+                                        <div class="small">
+                                            <div><strong>Model:</strong> {{ device.model_number|default:"-" }}</div>
+                                            <div><strong>Serial:</strong> {{ device.serial_number|default:"-" }}</div>
+                                        </div>
                                     </td>
-                                    <td>{{ device.manufacturer|default:"-" }}</td>
-                                    <td>{{ device.location }}</td>
                                     <td>
-                                        {% if device.status == 'working' %}
-                                            <span class="badge bg-success">Working</span>
-                                        {% elif device.status == 'maintenance' %}
-                                            <span class="badge bg-warning">Maintenance</span>
-                                        {% elif device.status == 'repair' %}
-                                            <span class="badge bg-danger">Needs Repair</span>
-                                        {% elif device.status == 'damaged' %}
-                                            <span class="badge bg-dark">Damaged</span>
+                                        <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                        {{ device.location }}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ device.status }}">
+                                            {{ device.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="priority-badge priority-{{ device.priority }}">
+                                            {{ device.get_priority_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if device.power_rating %}
+                                            <i class="fas fa-bolt text-warning me-1"></i>
+                                            {{ device.power_rating }}
                                         {% else %}
-                                            <span class="badge bg-secondary">Retired</span>
+                                            <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if device.priority == 'critical' %}
-                                            <span class="badge bg-danger">Critical</span>
-                                        {% elif device.priority == 'high' %}
-                                            <span class="badge bg-warning">High</span>
-                                        {% elif device.priority == 'medium' %}
-                                            <span class="badge bg-info">Medium</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Low</span>
-                                        {% endif %}
+                                        <i class="fas fa-dollar-sign text-success me-1"></i>
+                                        Tsh {{ device.maintenance_cost|floatformat:0|intcomma }}
                                     </td>
-                                    <td>{{ device.power_rating|default:"-" }}</td>
-                                    <td>Tsh {{ device.maintenance_cost|floatformat:0|intcomma }}</td>
                                     <td>
                                         {% if device.next_maintenance %}
-                                            {{ device.next_maintenance|date:"M d, Y" }}
+                                            <div class="small">
+                                                <i class="fas fa-calendar text-primary me-1"></i>
+                                                {{ device.next_maintenance|date:"M d, Y" }}
+                                                {% if device.next_maintenance <= today %}
+                                                    <div class="text-danger small">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Due Now
+                                                    </div>
+                                                {% endif %}
+                                            </div>
                                         {% else %}
-                                            <span class="text-muted">Not set</span>
+                                            <span class="text-muted small">Not scheduled</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{% url 'electrical_edit' device.id %}" 
-                                               class="btn btn-sm btn-outline-primary" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{% url 'electrical_delete' device.id %}" 
-                                               class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                    <td class="text-center">
+                                        <div class="device-actions">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'electrical_edit' device.id %}" 
+                                                   class="btn btn-outline-primary" title="Edit Device">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'electrical_delete' device.id %}" 
+                                                   class="btn btn-outline-danger" title="Delete Device">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -203,39 +359,65 @@
 
                 <!-- Pagination -->
                 {% if devices.has_other_pages %}
-                    <nav class="mt-4">
-                        <ul class="pagination justify-content-center">
-                            {% if devices.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">First</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ devices.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Previous</a>
-                                </li>
-                            {% endif %}
-                            
-                            <li class="page-item active">
-                                <span class="page-link">{{ devices.number }} of {{ devices.paginator.num_pages }}</span>
-                            </li>
-                            
-                            {% if devices.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ devices.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Next</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ devices.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Last</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+                    <div class="p-3 border-top">
+                        <nav aria-label="Devices pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if devices.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ devices.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in devices.paginator.page_range %}
+                                    {% if devices.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > devices.number|add:'-3' and num < devices.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if devices.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ devices.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ devices.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
                 {% endif %}
             {% else %}
                 <div class="text-center py-5">
-                    <i class="fas fa-bolt fa-3x text-muted mb-3"></i>
+                    <div class="empty-icon mb-3">
+                        <i class="fas fa-bolt text-muted"></i>
+                    </div>
                     <h5 class="text-muted">No electrical devices found</h5>
-                    <p class="text-muted">Start by adding your first electrical device.</p>
+                    <p class="text-muted mb-4">
+                        {% if search_query or status_filter or priority_filter %}
+                            No devices match your current filters. Try adjusting your search criteria.
+                        {% else %}
+                            Start managing your electrical devices by adding your first device.
+                        {% endif %}
+                    </p>
                     <a href="{% url 'electrical_add' %}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Device
+                        <i class="fas fa-plus me-2"></i>Add First Device
                     </a>
                 </div>
             {% endif %}

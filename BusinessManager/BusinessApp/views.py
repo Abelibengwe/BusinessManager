@@ -138,13 +138,217 @@ def dashboard(request):
     # Recent projects
     recent_projects = Project.objects.order_by('-created_at')[:5]
     
-    # Notifications
-    notifications = Notification.objects.filter(user=request.user, is_read=False)[:10]
+    # Create automatic notifications for important alerts
+    # Low stock notifications
+    low_stock_products = Product.objects.filter(
+        stock_quantity__lte=F('min_stock_level'),
+        is_active=True
+    )
+    
+    for product in low_stock_products:
+        # Check if notification already exists to avoid duplicates (check both read and unread)
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Low Stock Alert: {product.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"Low Stock Alert: {product.name}",
+                message=f"{product.name} is low in stock ({product.stock_quantity} remaining). Minimum level is {product.min_stock_level}. Please restock soon.",
+                notification_type='warning'
+            )
+    
+    # Electrical devices maintenance notifications
+    electrical_maintenance_due = ElectricalDevice.objects.filter(
+        next_maintenance__lte=timezone.now().date(),
+        status='working'
+    )
+    
+    for device in electrical_maintenance_due:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Maintenance Due: {device.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"Maintenance Due: {device.name}",
+                message=f"Electrical device '{device.name}' requires maintenance. Due date: {device.next_maintenance}",
+                notification_type='warning'
+            )
+    
+    # Electronics devices maintenance notifications
+    electronics_maintenance_due = ElectronicsDevice.objects.filter(
+        next_maintenance__lte=timezone.now().date(),
+        status='working'
+    )
+    
+    for device in electronics_maintenance_due:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Electronics Maintenance Due: {device.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"Electronics Maintenance Due: {device.name}",
+                message=f"Electronics device '{device.name}' requires maintenance. Due date: {device.next_maintenance}",
+                notification_type='warning'
+            )
+    
+    # Critical device alerts
+    critical_electrical = ElectricalDevice.objects.filter(
+        priority='critical',
+        status__in=['maintenance', 'repair', 'faulty']
+    )
+    
+    for device in critical_electrical:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Critical Device Alert: {device.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"Critical Device Alert: {device.name}",
+                message=f"Critical electrical device '{device.name}' is {device.status}. Immediate attention required!",
+                notification_type='error'
+            )
+    
+    critical_electronics = ElectronicsDevice.objects.filter(
+        priority='critical',
+        status__in=['maintenance', 'repair', 'faulty']
+    )
+    
+    for device in critical_electronics:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Critical Electronics Alert: {device.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"Critical Electronics Alert: {device.name}",
+                message=f"Critical electronics device '{device.name}' is {device.status}. Immediate attention required!",
+                notification_type='error'
+            )
+    
+    # Project deadline notifications (projects ending within 7 days)
+    upcoming_deadline = timezone.now().date() + timedelta(days=7)
+    projects_deadline = Project.objects.filter(
+        end_date__lte=upcoming_deadline,
+        end_date__gte=today,
+        status='in_progress'
+    )
+    
+    for project in projects_deadline:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"Project Deadline Approaching: {project.name}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            days_remaining = (project.end_date - today).days
+            Notification.objects.create(
+                user=request.user,
+                title=f"Project Deadline Approaching: {project.name}",
+                message=f"Project '{project.name}' for {project.client} is due in {days_remaining} days ({project.end_date})",
+                notification_type='info'
+            )
+    
+    # High expense alerts (expenses above a threshold in the last 7 days)
+    week_ago = today - timedelta(days=7)
+    high_expenses = Expense.objects.filter(
+        expense_date__gte=week_ago,
+        amount__gte=1000  # Threshold for high expenses
+    )
+    
+    for expense in high_expenses:
+        existing_notification = Notification.objects.filter(
+            user=request.user,
+            title=f"High Expense Alert: {expense.title}",
+            created_at__date=timezone.now().date()  # Only check today's notifications
+        ).first()
+        
+        if not existing_notification:
+            Notification.objects.create(
+                user=request.user,
+                title=f"High Expense Alert: {expense.title}",
+                message=f"Large expense recorded: {expense.title} - ${expense.amount} on {expense.expense_date}",
+                notification_type='warning'
+            )
     
     # Calculate profit margins
     gross_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
     net_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
     cogs_percentage = (total_cogs / total_revenue * 100) if total_revenue > 0 else 0
+    
+    # Services statistics for electrical and electronics devices
+    total_electrical_devices = ElectricalDevice.objects.count()
+    total_electronics_devices = ElectronicsDevice.objects.count()
+    total_services_devices = total_electrical_devices + total_electronics_devices
+    
+    # Working devices
+    working_electrical = ElectricalDevice.objects.filter(status='working').count()
+    working_electronics = ElectronicsDevice.objects.filter(status='working').count()
+    total_working_devices = working_electrical + working_electronics
+    
+    # Devices in maintenance or repair
+    maintenance_electrical = ElectricalDevice.objects.filter(status__in=['maintenance', 'repair']).count()
+    maintenance_electronics = ElectronicsDevice.objects.filter(status__in=['maintenance', 'repair']).count()
+    total_maintenance_devices = maintenance_electrical + maintenance_electronics
+    
+    # Critical devices
+    critical_electrical = ElectricalDevice.objects.filter(priority='critical').count()
+    critical_electronics = ElectronicsDevice.objects.filter(priority='critical').count()
+    total_critical_devices = critical_electrical + critical_electronics
+    
+    # Devices due for maintenance (next_maintenance <= today)
+    due_electrical = ElectricalDevice.objects.filter(
+        next_maintenance__lte=today,
+        status='working'
+    ).count()
+    due_electronics = ElectronicsDevice.objects.filter(
+        next_maintenance__lte=today,
+        status='working'
+    ).count()
+    total_due_maintenance = due_electrical + due_electronics
+    
+    # Calculate separate maintenance costs for electrical and electronics
+    electrical_maintenance_cost = ElectricalDevice.objects.filter(
+        status__in=['maintenance', 'repair']
+    ).aggregate(total=Sum('maintenance_cost'))['total'] or 0
+    
+    electronics_maintenance_cost = ElectronicsDevice.objects.filter(
+        status__in=['maintenance', 'repair']
+    ).aggregate(total=Sum('maintenance_cost'))['total'] or 0
+    
+    total_maintenance_cost = electrical_maintenance_cost + electronics_maintenance_cost
+    
+    # Calculate project budget (active projects)
+    active_projects_budget = Project.objects.filter(
+        status__in=['planning', 'in_progress']
+    ).aggregate(total=Sum('budget'))['total'] or 0
+    
+    # Calculate total active projects count
+    total_active_projects = Project.objects.filter(
+        status__in=['planning', 'in_progress']
+    ).count()
+    
+    # Services uptime percentage
+    services_uptime = (total_working_devices / total_services_devices * 100) if total_services_devices > 0 else 100
     
     context = {
         'total_products': total_products,
@@ -165,7 +369,20 @@ def dashboard(request):
         'low_stock_products': low_stock_products,
         'recent_sales': recent_sales,
         'recent_projects': recent_projects,
-        'notifications': notifications,
+        # Services statistics
+        'total_services_devices': total_services_devices,
+        'total_electrical_devices': total_electrical_devices,
+        'total_electronics_devices': total_electronics_devices,
+        'total_working_devices': total_working_devices,
+        'total_maintenance_devices': total_maintenance_devices,
+        'total_critical_devices': total_critical_devices,
+        'total_due_maintenance': total_due_maintenance,
+        'total_maintenance_cost': total_maintenance_cost,
+        'electrical_maintenance_cost': electrical_maintenance_cost,
+        'electronics_maintenance_cost': electronics_maintenance_cost,
+        'active_projects_budget': active_projects_budget,
+        'total_active_projects': total_active_projects,
+        'services_uptime': services_uptime,
     }
     
     return render(request, 'dashboard.html', context)
@@ -878,6 +1095,44 @@ def mark_notification_read(request, pk):
     notification.save()
     
     return JsonResponse({'success': True})
+
+@login_required
+def notification_count_api(request):
+    """API endpoint to get unread notification count"""
+    try:
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return JsonResponse({
+            'count': count,
+            'success': True
+        })
+    except Exception as e:
+        return JsonResponse({
+            'count': 0,
+            'success': False,
+            'error': str(e)
+        })
+
+@login_required
+def notification_dropdown_api(request):
+    """API endpoint to get notifications for dropdown"""
+    from django.utils.timesince import timesince
+    
+    notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')[:10]
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'title': notification.title,
+            'message': notification.message,
+            'notification_type': notification.notification_type,
+            'time_ago': timesince(notification.created_at) + " ago"
+        })
+    
+    return JsonResponse({
+        'notifications': notifications_data,
+        'count': len(notifications_data)
+    })
 
 # API endpoints for AJAX requests
 @login_required

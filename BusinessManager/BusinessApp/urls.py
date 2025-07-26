@@ -54,7 +54,9 @@ urlpatterns = [
     
     # Notifications
     path('notifications/', views.notifications, name='notifications'),
-    path('notifications/mark-read/<int:pk>/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/<int:pk>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/count/', views.notification_count_api, name='notification_count_api'),
+    path('notifications/dropdown/', views.notification_dropdown_api, name='notification_dropdown_api'),
     
     # API endpoints for AJAX
     path('api/dashboard-data/', views.dashboard_data_api, name='dashboard_data_api'),

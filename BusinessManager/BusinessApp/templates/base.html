@@ -19,6 +19,31 @@
     {% load static %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     
+    <!-- Fix mobile notification dropdown visibility -->
+    <style>
+        /* Ensure mobile notification dropdown is hidden by default */
+        .d-lg-none .dropdown-menu {
+            display: none !important;
+        }
+        .d-lg-none .dropdown-menu.show {
+            display: block !important;
+        }
+        
+        /* Ensure proper dropdown behavior on mobile */
+        @media (max-width: 991.98px) {
+            .notification-dropdown {
+                position: absolute !important;
+                top: 100% !important;
+                right: 0 !important;
+                z-index: 1050 !important;
+                display: none !important;
+            }
+            .notification-dropdown.show {
+                display: block !important;
+            }
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body class="modern-body">
@@ -39,12 +64,91 @@
                 </div>
             </a>
             
-            <!-- Mobile toggle -->
-            <button class="navbar-toggler custom-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+            <!-- Mobile right side - notifications, profile, and menu button -->
+            <div class="d-flex d-lg-none align-items-center ms-auto">
+                <!-- Mobile Notifications -->
+                <div class="nav-item dropdown me-1">
+                    <a class="nav-link notification-bell position-relative p-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        {% if notification_count > 0 %}
+                        <span class="notification-badge">{{ notification_count }}</span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end modern-dropdown notification-dropdown">
+                        <li class="dropdown-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Notifications</span>
+                                <span class="badge bg-primary">{{ notification_count }}</span>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for notification in notifications %}
+                        <li>
+                            <a class="dropdown-item notification-item {{ notification.notification_type }}" href="#" 
+                               data-notification-id="{{ notification.id }}">
+                                <div class="notification-content">
+                                    <div class="notification-title">
+                                        {% if notification.notification_type == 'error' %}
+                                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                        {% elif notification.notification_type == 'warning' %}
+                                            <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        {% elif notification.notification_type == 'success' %}
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                        {% endif %}
+                                        {{ notification.title }}
+                                    </div>
+                                    <div class="notification-text">{{ notification.message|truncatechars:60 }}</div>
+                                    <div class="notification-time">{{ notification.created_at|timesince }} ago</div>
+                                </div>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="no-notifications">
+                            <div class="text-center py-3">
+                                <i class="fas fa-bell-slash text-muted"></i>
+                                <p class="text-muted mb-0 mt-2">No notifications</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-center view-all" href="{% url 'notifications' %}">View All</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Mobile User Profile -->
+                <div class="nav-item dropdown me-1">
+                    <a class="nav-link user-profile p-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="{{ user.get_full_name|default:user.username }}">
+                        <div class="user-avatar">
+                            <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=2563eb&color=fff&size=32" alt="Avatar">
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end modern-dropdown user-dropdown">
+                        <li class="user-dropdown-header">
+                            <div class="user-info-full">
+                                <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=2563eb&color=fff&size=40" alt="Avatar">
+                                <div>
+                                    <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                                    <div class="text-muted small">{{ user.email|default:"admin@bkpro.com" }}</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-user-circle"></i>Profile</a></li>
+                        <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-cog"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item modern-dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Mobile toggle -->
+                <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-expanded="false" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
             
             <!-- Collapsible content -->
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -122,30 +226,42 @@
                     </li>
                 </ul>
                 
-                <!-- Right side items -->
-                <ul class="navbar-nav ms-auto align-items-center">
+                <!-- Right side items - Desktop only -->
+                <ul class="navbar-nav ms-auto align-items-center d-none d-lg-flex">
                     <!-- Notifications -->
                     <li class="nav-item dropdown me-2">
                         <a class="nav-link notification-bell position-relative p-2" href="#" role="button" data-bs-toggle="dropdown" title="Notifications">
                             <i class="fas fa-bell"></i>
-                            {% if notifications %}
-                            <span class="notification-badge">{{ notifications.count }}</span>
+                            {% if notification_count > 0 %}
+                            <span class="notification-badge">{{ notification_count }}</span>
                             {% endif %}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end modern-dropdown notification-dropdown">
                             <li class="dropdown-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>Notifications</span>
-                                    <span class="badge bg-primary">{{ notifications.count|default:0 }}</span>
+                                    <span class="badge bg-primary">{{ notification_count }}</span>
                                 </div>
                             </li>
+                            <li><hr class="dropdown-divider"></li>
                             {% for notification in notifications %}
                             <li>
-                                <a class="dropdown-item notification-item" href="#" 
+                                <a class="dropdown-item notification-item {{ notification.notification_type }}" href="#" 
                                    data-notification-id="{{ notification.id }}">
                                     <div class="notification-content">
-                                        <div class="notification-title">{{ notification.title }}</div>
-                                        <div class="notification-text">{{ notification.message|truncatechars:50 }}</div>
+                                        <div class="notification-title">
+                                            {% if notification.notification_type == 'error' %}
+                                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                            {% elif notification.notification_type == 'warning' %}
+                                                <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                            {% elif notification.notification_type == 'success' %}
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                            {% else %}
+                                                <i class="fas fa-info-circle text-info me-2"></i>
+                                            {% endif %}
+                                            {{ notification.title }}
+                                        </div>
+                                        <div class="notification-text">{{ notification.message|truncatechars:80 }}</div>
                                         <div class="notification-time">{{ notification.created_at|timesince }} ago</div>
                                     </div>
                                 </a>
@@ -198,18 +314,17 @@
     </nav>
 
     <!-- Mobile Sidebar -->
-    <aside class="mobile-sidebar d-lg-none" id="mobileSidebar">
-        <div class="sidebar-content">
-            <div class="sidebar-header">
-                <div class="sidebar-brand">
-                    <i class="fas fa-cube brand-icon"></i>
-                    <span class="brand-text">BK-Pro</span>
-                </div>
-                <button class="sidebar-close" id="sidebarClose">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="offcanvas offcanvas-start mobile-sidebar d-lg-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+        <div class="offcanvas-header sidebar-header">
+            <div class="sidebar-brand" id="mobileSidebarLabel">
+                <i class="fas fa-cube brand-icon"></i>
+                <span class="brand-text">BK-Pro</span>
             </div>
-            
+            <button type="button" class="btn-close sidebar-close" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body sidebar-content">
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
@@ -269,10 +384,7 @@
                 </ul>
             </nav>
         </div>
-    </aside>
-
-    <!-- Overlay for mobile sidebar -->
-    <div class="sidebar-overlay d-lg-none" id="sidebarOverlay"></div>
+    </div>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -328,6 +440,191 @@
     <script>
         // Make CSRF token available globally
         window.csrfToken = '{{ csrf_token }}';
+        
+        // Handle notification mark as read in dropdown
+        $(document).ready(function() {
+            // Function to update notification count and badge
+            function updateNotificationCount() {
+                $.ajax({
+                    url: '/notifications/count/',
+                    method: 'GET',
+                    success: function(response) {
+                        const count = response.count || 0;
+                        const $badge = $('.notification-badge');
+                        const $countBadge = $('.notification-dropdown .badge');
+                        
+                        console.log('Notification count received:', count); // Debug log
+                        
+                        // Update all badges
+                        if (count === 0) {
+                            $badge.hide();
+                            $countBadge.text('0');
+                        } else {
+                            $badge.show().text(count);
+                            $countBadge.text(count);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching notification count:', error);
+                    }
+                });
+            }
+            
+            // Function to refresh dropdown notifications
+            function refreshDropdownNotifications() {
+                $.ajax({
+                    url: '/notifications/dropdown/',
+                    method: 'GET',
+                    success: function(response) {
+                        // Update both desktop and mobile dropdowns
+                        $('.notification-dropdown').each(function() {
+                            const $dropdown = $(this);
+                            const $notificationsList = $dropdown.find('li').slice(1, -2); // Remove header and footer
+                            
+                            // Remove existing notification items
+                            $notificationsList.remove();
+                            
+                            if (response.notifications && response.notifications.length > 0) {
+                                // Add new notifications
+                                let notificationsHtml = '';
+                                response.notifications.forEach(function(notification) {
+                                    const iconClass = {
+                                        'error': 'fas fa-exclamation-triangle text-danger',
+                                        'warning': 'fas fa-exclamation-circle text-warning',
+                                        'success': 'fas fa-check-circle text-success',
+                                        'info': 'fas fa-info-circle text-info'
+                                    }[notification.notification_type] || 'fas fa-info-circle text-info';
+                                    
+                                    // Use shorter text for mobile dropdowns
+                                    const isMobile = $dropdown.closest('.d-lg-none').length > 0;
+                                    const maxChars = isMobile ? 60 : 80;
+                                    
+                                    notificationsHtml += `
+                                        <li>
+                                            <a class="dropdown-item notification-item ${notification.notification_type}" href="#" 
+                                               data-notification-id="${notification.id}">
+                                                <div class="notification-content">
+                                                    <div class="notification-title">
+                                                        <i class="${iconClass} me-2"></i>
+                                                        ${notification.title}
+                                                    </div>
+                                                    <div class="notification-text">${notification.message.slice(0, maxChars)}${notification.message.length > maxChars ? '...' : ''}</div>
+                                                    <div class="notification-time">${notification.time_ago}</div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    `;
+                                });
+                                
+                                // Insert notifications before the last divider
+                                const $dividers = $dropdown.find('.dropdown-divider');
+                                const $lastDivider = $dividers.last();
+                                $lastDivider.before(notificationsHtml);
+                            } else {
+                                // Show no notifications message
+                                const noNotificationsHtml = `
+                                    <li class="no-notifications">
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-bell-slash text-muted"></i>
+                                            <p class="text-muted mb-0 mt-2">No notifications</p>
+                                        </div>
+                                    </li>
+                                `;
+                                const $dividers = $dropdown.find('.dropdown-divider');
+                                const $lastDivider = $dividers.last();
+                                $lastDivider.before(noNotificationsHtml);
+                            }
+                        });
+                        
+                        // Update count
+                        updateNotificationCount();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error refreshing notifications:', error);
+                    }
+                });
+            }
+            
+            // Refresh notifications when page loads (in case user came back from notifications page)
+            if (window.location.pathname !== '/notifications/') {
+                // Only refresh on desktop initially to debug mobile issue
+                if (window.innerWidth >= 992) {
+                    refreshDropdownNotifications();
+                }
+                
+                // Check if user just came back from notifications page
+                if (localStorage.getItem('notificationsPageVisited') === 'true') {
+                    localStorage.removeItem('notificationsPageVisited');
+                    setTimeout(refreshDropdownNotifications, 500); // Small delay to ensure changes are saved
+                }
+            }
+            
+            // Listen for storage events
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'notificationsPageVisited' && e.newValue === 'true') {
+                    setTimeout(function() {
+                        localStorage.removeItem('notificationsPageVisited');
+                        refreshDropdownNotifications();
+                    }, 1000);
+                }
+            });
+            
+            // Handle dropdown notification clicks
+            $(document).on('click', '.notification-dropdown .notification-item', function(e) {
+                e.preventDefault();
+                const notificationId = $(this).data('notification-id');
+                const $notificationItem = $(this).parent();
+                
+                if (notificationId) {
+                    $.ajax({
+                        url: `/notifications/${notificationId}/mark-read/`,
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': window.csrfToken
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // Remove from dropdown with animation
+                                $notificationItem.fadeOut(300, function() {
+                                    $(this).remove();
+                                    
+                                    // Update notification count
+                                    const $badge = $('.notification-badge');
+                                    const $countBadge = $('.notification-dropdown .badge');
+                                    let currentCount = parseInt($countBadge.text()) || 0;
+                                    let newCount = Math.max(0, currentCount - 1);
+                                    
+                                    if (newCount === 0) {
+                                        $badge.fadeOut();
+                                        $countBadge.text('0');
+                                        
+                                        // Show no notifications message if dropdown is empty
+                                        if ($('.notification-dropdown .notification-item').length === 0) {
+                                            const noNotificationsHtml = `
+                                                <li class="no-notifications">
+                                                    <div class="text-center py-3">
+                                                        <i class="fas fa-bell-slash text-muted"></i>
+                                                        <p class="text-muted mb-0 mt-2">No notifications</p>
+                                                    </div>
+                                                </li>
+                                            `;
+                                            $('.notification-dropdown').find('.dropdown-divider').last().before(noNotificationsHtml);
+                                        }
+                                    } else {
+                                        $badge.text(newCount);
+                                        $countBadge.text(newCount);
+                                    }
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error marking notification as read:', error);
+                            console.error('Response:', xhr.responseText);
+                        }
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>
