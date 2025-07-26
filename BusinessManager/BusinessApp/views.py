@@ -859,6 +859,61 @@ def project_delete(request, pk):
     return render(request, 'projects/delete.html', {'project': project})
 
 @login_required
+def project_detail(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    # Calculate project metrics
+    days_elapsed = 0
+    days_remaining = 0
+    project_duration = 0
+    
+    if project.start_date:
+        start_date = project.start_date
+        current_date = timezone.now().date()
+        days_elapsed = (current_date - start_date).days
+        
+        if project.end_date:
+            project_duration = (project.end_date - start_date).days
+            days_remaining = (project.end_date - current_date).days
+        
+    # Calculate budget utilization
+    budget_utilization = 0
+    if project.budget > 0:
+        budget_utilization = (project.spent_amount / project.budget) * 100
+    
+    # Determine project health based on progress vs budget utilization
+    project_health = 'good'
+    if budget_utilization > project.progress + 20:
+        project_health = 'over_budget'
+    elif project.progress < 50 and days_elapsed > project_duration * 0.6:
+        project_health = 'behind_schedule'
+    elif budget_utilization > 90 and project.progress < 90:
+        project_health = 'warning'
+    
+    # Get related expenses (if any)
+    related_expenses = Expense.objects.filter(
+        description__icontains=project.name
+    ).order_by('-expense_date')[:5]
+    
+    # Get recent stock movements related to this project (if any)
+    project_stock_movements = StockMovement.objects.filter(
+        reason__icontains=project.name
+    ).select_related('product').order_by('-created_at')[:5]
+    
+    context = {
+        'project': project,
+        'days_elapsed': max(0, days_elapsed),
+        'days_remaining': days_remaining,
+        'project_duration': project_duration,
+        'budget_utilization': round(budget_utilization, 1),
+        'project_health': project_health,
+        'related_expenses': related_expenses,
+        'project_stock_movements': project_stock_movements,
+    }
+    
+    return render(request, 'projects/detail.html', context)
+
+@login_required
 def stock_in_list(request):
     products = Product.objects.filter(is_active=True).select_related('category')
     

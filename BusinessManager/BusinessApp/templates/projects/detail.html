@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ project.name }} - Empire Dynamics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .status-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .progress-container {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 0.25rem;
+        margin-top: 1rem;
+    }
+    
+    .progress-bar-custom {
+        background: var(--gradient-success);
+        height: 8px;
+        border-radius: 6px;
+        transition: width 0.3s ease;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        height: 100%;
+    }
+    
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0.5rem 0;
+    }
+    
+    .metric-label {
+        color: var(--secondary-color);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .health-good { background: var(--gradient-success); }
+    .health-warning { background: var(--gradient-warning); }
+    .health-over_budget { background: var(--gradient-danger); }
+    .health-behind_schedule { background: var(--gradient-warning); }
+    
+    .info-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card-header {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .info-card-body {
+        padding: 1.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    
+    .detail-value {
+        color: #1e293b;
+        font-weight: 500;
+        text-align: right;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 767.98px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
+        
+        .detail-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .detail-value {
+            text-align: left;
+        }
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #e2e8f0;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 0.5rem;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+    
+    .timeline-date {
+        font-size: 0.75rem;
+        color: var(--secondary-color);
+        font-weight: 500;
+    }
+    
+    .timeline-content {
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="project-header">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div class="flex-grow-1">
+                <h1 class="h3 mb-2">{{ project.name }}</h1>
+                <p class="mb-2 opacity-90">{{ project.client }}</p>
+                <div class="d-flex flex-column flex-md-row gap-2 mb-3">
+                    <span class="badge 
+                        {% if project.status == 'completed' %}bg-success{% endif %}
+                        {% if project.status == 'in_progress' %}bg-primary{% endif %}
+                        {% if project.status == 'planning' %}bg-info{% endif %}
+                        {% if project.status == 'on_hold' %}bg-warning{% endif %}
+                        {% if project.status == 'cancelled' %}bg-danger{% endif %}
+                        text-white status-badge">
+                        <i class="fas 
+                            {% if project.status == 'completed' %}fa-check-circle{% endif %}
+                            {% if project.status == 'in_progress' %}fa-play-circle{% endif %}
+                            {% if project.status == 'planning' %}fa-clipboard-list{% endif %}
+                            {% if project.status == 'on_hold' %}fa-pause-circle{% endif %}
+                            {% if project.status == 'cancelled' %}fa-times-circle{% endif %}
+                            me-1"></i>
+                        {{ project.get_status_display }}
+                    </span>
+                    <span class="badge 
+                        {% if project_health == 'good' %}bg-success{% endif %}
+                        {% if project_health == 'warning' %}bg-warning{% endif %}
+                        {% if project_health == 'over_budget' %}bg-danger{% endif %}
+                        {% if project_health == 'behind_schedule' %}bg-warning{% endif %}
+                        text-white status-badge">
+                        <i class="fas fa-heart-pulse me-1"></i>
+                        {% if project_health == 'good' %}Healthy{% endif %}
+                        {% if project_health == 'warning' %}Needs Attention{% endif %}
+                        {% if project_health == 'over_budget' %}Over Budget{% endif %}
+                        {% if project_health == 'behind_schedule' %}Behind Schedule{% endif %}
+                    </span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar-custom" style="width: {{ project.progress }}%"></div>
+                </div>
+                <small class="opacity-75 mt-1 d-block">{{ project.progress }}% Complete</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Projects
+        </a>
+        <a href="{% url 'project_edit' project.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Edit Project
+        </a>
+        <a href="{% url 'project_add' %}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>New Project
+        </a>
+        <button class="btn btn-info" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+
+    <!-- Project Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon health-{{ project_health }}">
+                    <i class="fas fa-calendar-alt text-white"></i>
+                </div>
+                <div class="metric-value">{{ days_elapsed }}</div>
+                <div class="metric-label">Days Elapsed</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon {% if days_remaining < 0 %}health-over_budget{% else %}health-good{% endif %}">
+                    <i class="fas fa-clock text-white"></i>
+                </div>
+                <div class="metric-value">
+                    {% if days_remaining >= 0 %}{{ days_remaining }}{% else %}{{ days_remaining|floatformat:0 }}{% endif %}
+                </div>
+                <div class="metric-label">Days Remaining</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon {% if budget_utilization > 90 %}health-over_budget{% elif budget_utilization > 70 %}health-warning{% else %}health-good{% endif %}">
+                    <i class="fas fa-chart-pie text-white"></i>
+                </div>
+                <div class="metric-value">{{ budget_utilization }}%</div>
+                <div class="metric-label">Budget Used</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-icon health-good">
+                    <i class="fas fa-tasks text-white"></i>
+                </div>
+                <div class="metric-value">{{ project.progress }}%</div>
+                <div class="metric-label">Progress</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Information Grid -->
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Project Details Card -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Project Details
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="detail-item">
+                        <span class="detail-label">Project ID</span>
+                        <span class="detail-value">#{{ project.id }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Client</span>
+                        <span class="detail-value">{{ project.client }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Date</span>
+                        <span class="detail-value">{{ project.start_date|date:"M j, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">End Date</span>
+                        <span class="detail-value">
+                            {% if project.end_date %}
+                                {{ project.end_date|date:"M j, Y" }}
+                            {% else %}
+                                Not Set
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Duration</span>
+                        <span class="detail-value">{{ project_duration }} days</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Created By</span>
+                        <span class="detail-value">{{ project.created_by.get_full_name|default:project.created_by.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Created Date</span>
+                        <span class="detail-value">{{ project.created_at|date:"M j, Y g:i A" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Budget Information Card -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2 text-primary"></i>Budget Information
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="detail-item">
+                        <span class="detail-label">Total Budget</span>
+                        <span class="detail-value">Tsh {{ project.budget|floatformat:0|intcomma }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Amount Spent</span>
+                        <span class="detail-value text-warning">Tsh {{ project.spent_amount|floatformat:0|intcomma }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Remaining Budget</span>
+                        <span class="detail-value {% if project.remaining_budget < 0 %}text-danger{% else %}text-success{% endif %}">
+                            Tsh {{ project.remaining_budget|floatformat:0|intcomma }}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Budget Utilization</span>
+                        <span class="detail-value {% if budget_utilization > 90 %}text-danger{% elif budget_utilization > 70 %}text-warning{% else %}text-success{% endif %}">
+                            {{ budget_utilization }}%
+                        </span>
+                    </div>
+                    {% if project.is_over_budget %}
+                    <div class="detail-item">
+                        <span class="detail-label">Over Budget</span>
+                        <span class="detail-value text-danger">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Tsh {{ project.spent_amount|floatformat:0|intcomma }} exceeds budget
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Description -->
+    {% if project.description %}
+    <div class="info-card mt-4">
+        <div class="info-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-file-alt me-2 text-primary"></i>Project Description
+            </h5>
+        </div>
+        <div class="info-card-body">
+            <p class="mb-0">{{ project.description|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Related Information -->
+    <div class="row mt-4">
+        {% if related_expenses %}
+        <div class="col-md-6">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2 text-primary"></i>Related Expenses
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    {% for expense in related_expenses %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ expense.expense_date|date:"M j, Y" }}</div>
+                        <div class="timeline-content">
+                            <strong>{{ expense.title }}</strong><br>
+                            <span class="text-success">Tsh {{ expense.amount|floatformat:0|intcomma }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if project_stock_movements %}
+        <div class="col-md-6">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-boxes me-2 text-primary"></i>Related Stock Movements
+                    </h5>
+                </div>
+                <div class="info-card-body">
+                    {% for movement in project_stock_movements %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ movement.created_at|date:"M j, Y" }}</div>
+                        <div class="timeline-content">
+                            <strong>{{ movement.product.name }}</strong><br>
+                            <small class="text-muted">{{ movement.reason }}</small><br>
+                            <span class="{% if movement.movement_type == 'in' %}text-success{% else %}text-warning{% endif %}">
+                                {{ movement.get_movement_type_display }}: {{ movement.quantity }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
