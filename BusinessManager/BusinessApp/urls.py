@@ -59,8 +59,13 @@ urlpatterns = [
     path('notifications/count/', views.notification_count_api, name='notification_count_api'),
     path('notifications/dropdown/', views.notification_dropdown_api, name='notification_dropdown_api'),
     
+    # Profile and Settings
+    path('profile/', views.profile_view, name='profile'),
+    path('settings/', views.settings_view, name='settings'),
+    
     # API endpoints for AJAX
     path('api/dashboard-data/', views.dashboard_data_api, name='dashboard_data_api'),
     path('api/sales-chart/', views.sales_chart_api, name='sales_chart_api'),
     path('api/products/search/', views.product_search_api, name='product_search_api'),
+    path('api/verify-admin-password/', views.verify_admin_password, name='verify_admin_password'),
 ]

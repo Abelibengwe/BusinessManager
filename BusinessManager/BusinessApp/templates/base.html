@@ -59,7 +59,7 @@
                     </div>
                     <div class="brand-text d-none d-sm-block">
                         <span class="brand-name">Empire Dynamics</span>
-                        <span class="brand-subtitle">Business</span>
+                        {% comment %} <span class="brand-subtitle">Business</span> {% endcomment %}
                     </div>
                 </div>
             </a>
@@ -135,8 +135,8 @@
                             </div>
                         </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-user-circle"></i>Profile</a></li>
-                        <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-cog"></i>Settings</a></li>
+                        <li><a class="dropdown-item modern-dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-circle"></i>Profile</a></li>
+                        <li><a class="dropdown-item modern-dropdown-item" href="{% url 'settings' %}"><i class="fas fa-cog"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item modern-dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
                     </ul>
@@ -287,7 +287,7 @@
                             </div>
                             <div class="user-info d-none d-lg-block">
                                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-                                <span class="user-role">Admin</span>
+                                {% comment %} <span class="user-role">Admin</span> {% endcomment %}
                             </div>
                             <i class="fas fa-chevron-down ms-1 d-none d-lg-block"></i>
                         </a>
@@ -302,8 +302,8 @@
                                 </div>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-user-circle"></i>Profile</a></li>
-                            <li><a class="dropdown-item modern-dropdown-item" href="#"><i class="fas fa-cog"></i>Settings</a></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-circle"></i>Profile</a></li>
+                            <li><a class="dropdown-item modern-dropdown-item" href="{% url 'settings' %}"><i class="fas fa-cog"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item modern-dropdown-item logout-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i>Sign Out</a></li>
                         </ul>

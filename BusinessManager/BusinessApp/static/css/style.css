@@ -1288,7 +1288,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .user-info-full {
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to flex-start for better text wrapping */
     gap: 0.75rem;
 }
 
@@ -1298,6 +1298,36 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--border-color);
+    flex-shrink: 0; /* Prevent avatar from shrinking */
+    margin-top: 2px; /* Small top margin to align with text */
+}
+
+/* Style the text container */
+.user-info-full > div {
+    flex: 1;
+    min-width: 0; /* Allow text to shrink */
+    overflow: hidden;
+    line-height: 1.3; /* Better line spacing for wrapped text */
+}
+
+/* Style username - allow wrapping */
+.user-info-full .fw-semibold {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    max-width: 160px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Style email - allow wrapping */
+.user-info-full .text-muted.small {
+    word-wrap: break-word;
+    word-break: break-all; /* Allow breaking long email addresses */
+    white-space: normal;
+    max-width: 160px;
+    display: block;
+    line-height: 1.2;
 }
 
 .logout-item {
@@ -2541,7 +2571,7 @@ h1, h2, h3, h4, h5, h6 {
     
     .d-lg-none .user-info-full {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 0.75rem;
     }
     
@@ -2549,6 +2579,34 @@ h1, h2, h3, h4, h5, h6 {
         width: 40px;
         height: 40px;
         border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    /* Mobile user text styling */
+    .d-lg-none .user-info-full > div {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        line-height: 1.3;
+    }
+
+    .d-lg-none .user-info-full .fw-semibold {
+        word-wrap: break-word;
+        word-break: break-word;
+        white-space: normal;
+        max-width: 180px;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .d-lg-none .user-info-full .text-muted.small {
+        word-wrap: break-word;
+        word-break: break-all;
+        white-space: normal;
+        max-width: 180px;
+        display: block;
+        line-height: 1.2;
     }
     
     /* Services Overview - stack items properly on mobile */

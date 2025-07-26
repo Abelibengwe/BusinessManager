@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.db.models import Sum, Count, Q, F
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
@@ -350,6 +352,10 @@ def dashboard(request):
     # Services uptime percentage
     services_uptime = (total_working_devices / total_services_devices * 100) if total_services_devices > 0 else 100
     
+    # Check if user has admin access for sensitive data
+    is_staff_user = request.user.is_staff
+    admin_verified = request.session.get('admin_verified', False) if not is_staff_user else True
+    
     context = {
         'total_products': total_products,
         'total_sales': total_sales,
@@ -383,6 +389,9 @@ def dashboard(request):
         'active_projects_budget': active_projects_budget,
         'total_active_projects': total_active_projects,
         'services_uptime': services_uptime,
+        # Admin access control
+        'is_staff_user': is_staff_user,
+        'admin_verified': admin_verified,
     }
     
     return render(request, 'dashboard.html', context)
@@ -1637,3 +1646,107 @@ def electronics_delete(request, device_id):
         return redirect('electronics_list')
     
     return render(request, 'electronics/delete.html', {'device': device})
+
+@login_required
+@require_POST
+@csrf_exempt
+def verify_admin_password(request):
+    """
+    API endpoint to verify admin password for accessing sensitive information
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        password = data.get('password', '')
+        
+        if not password:
+            return JsonResponse({
+                'success': False,
+                'message': 'Password is required'
+            }, status=400)
+        
+        # Authenticate the current user with the provided password
+        user = authenticate(username=request.user.username, password=password)
+        
+        if user is not None and user.is_staff:
+            # Store the admin verification in session for this session only
+            request.session['admin_verified'] = True
+            request.session['admin_verified_at'] = timezone.now().isoformat()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Admin access granted'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid password or insufficient privileges'
+            }, status=401)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid request format'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }, status=500)
+
+@login_required
+def profile_view(request):
+    """View for user profile page"""
+    if request.method == 'POST':
+        # Handle profile update
+        user = request.user
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
+        user.save()
+        
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('profile')
+    
+    context = {
+        'title': 'Profile',
+        'user': request.user,
+    }
+    return render(request, 'profile/profile.html', context)
+
+@login_required
+def settings_view(request):
+    """View for user settings page"""
+    if request.method == 'POST':
+        # Handle different form submissions
+        if 'change_password' in request.POST:
+            # Handle password change
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Current password is incorrect.')
+            elif new_password != confirm_password:
+                messages.error(request, 'New passwords do not match.')
+            elif len(new_password) < 8:
+                messages.error(request, 'Password must be at least 8 characters long.')
+            else:
+                request.user.set_password(new_password)
+                request.user.save()
+                messages.success(request, 'Password changed successfully!')
+                return redirect('login')  # Redirect to login after password change
+        
+        elif 'account_settings' in request.POST:
+            # Handle account settings update
+            user = request.user
+            user.first_name = request.POST.get('first_name', '')
+            user.last_name = request.POST.get('last_name', '')
+            user.email = request.POST.get('email', '')
+            user.save()
+            messages.success(request, 'Account settings updated successfully!')
+    
+    context = {
+        'title': 'Settings',
+        'user': request.user,
+    }
+    return render(request, 'settings/settings.html', context)

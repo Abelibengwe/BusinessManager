@@ -79,16 +79,36 @@
         </div>
         
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card fade-in">
+            <div class="stat-card fade-in" style="position: relative;">
                 <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                <div class="stat-value">Tsh {{ profit|floatformat:0|intcomma|default:0 }}</div>
-                <div class="stat-label">Net Profit</div>
-                <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
-                    <i class="fas fa-arrow-{% if profit_change >= 0 %}up{% else %}down{% endif %}"></i> 
-                    {{ profit_change|floatformat:1 }}% from last month
-                </div>
+                
+                {% if not is_staff_user and not admin_verified %}
+                    <!-- Blurred content for non-staff users -->
+                    <div class="stat-value admin-protected-content">Tsh ••••••••</div>
+                    <div class="stat-label">Net Profit</div>
+                    <div class="stat-change admin-protected-content">
+                        <i class="fas fa-arrow-up"></i> 
+                        ••••% from last month
+                    </div>
+                    
+                    <!-- Overlay for admin authentication -->
+                    <div class="admin-access-overlay" onclick="showAdminModal()">
+                        <div class="admin-access-content">
+                            <i class="fas fa-lock admin-lock-icon"></i>
+                            <span class="admin-access-text">Admin Access Required</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Normal content for staff users or authenticated admins -->
+                    <div class="stat-value">Tsh {{ profit|floatformat:0|intcomma|default:0 }}</div>
+                    <div class="stat-label">Net Profit</div>
+                    <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
+                        <i class="fas fa-arrow-{% if profit_change >= 0 %}up{% else %}down{% endif %}"></i> 
+                        {{ profit_change|floatformat:1 }}% from last month
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -141,7 +161,26 @@
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-4 col-sm-6 col-12">
-                            <div class="border-end">
+                            <div class="border-end position-relative" id="netProfitSection">
+                                {% if not is_staff_user and not admin_verified %}
+                                <!-- Blurred content for non-admin users -->
+                                <div class="net-profit-blur">
+                                    <h4 class="text-success blur-text">
+                                        Tsh ••••••••
+                                    </h4>
+                                    <small class="text-muted">Net Profit</small>
+                                    <div class="mt-1">
+                                        <span class="badge bg-success blur-text">
+                                            •••• Margin
+                                        </span>
+                                    </div>
+                                    <div class="admin-lock-overlay" onclick="showAdminAuthModal()">
+                                        <i class="fas fa-lock"></i>
+                                        <small>Admin Access Required</small>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- Normal content for admin users -->
                                 <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
                                     Tsh {{ net_profit|floatformat:0|intcomma|default:0 }}
                                 </h4>
@@ -151,6 +190,7 @@
                                         {{ net_margin|floatformat:1 }}% Margin
                                     </span>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-4 col-sm-6 col-12">
@@ -676,5 +716,256 @@ $(document).ready(function() {
         console.log('Set default chart period to 30 days');
     }, 1000);
 });
+
+// Admin authentication functions
+function showAdminModal() {
+    $('#adminAuthModal').modal('show');
+}
+
+function showAdminAuthModal() {
+    $('#adminAuthModal').modal('show');
+}
+
+function verifyAdminPassword() {
+    const password = document.getElementById('adminPassword').value;
+    const errorDiv = document.getElementById('adminPasswordError');
+    
+    if (!password) {
+        errorDiv.textContent = 'Please enter your password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#adminAuthModal .btn-primary');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
+    
+    // Make API call to verify password
+    fetch('/api/verify-admin-password/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.csrfToken
+        },
+        body: JSON.stringify({
+            password: password
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide modal and reload page to show net profit
+            $('#adminAuthModal').modal('hide');
+            window.location.reload();
+        } else {
+            errorDiv.textContent = data.message || 'Invalid password or insufficient privileges';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error verifying admin password:', error);
+        errorDiv.textContent = 'An error occurred. Please try again.';
+        errorDiv.style.display = 'block';
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+}
+
+// Handle Enter key in password field
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('adminPassword');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyAdminPassword();
+            }
+        });
+    }
+});
 </script>
+
+<!-- Admin Authentication Modal -->
+<div class="modal fade" id="adminAuthModal" tabindex="-1" aria-labelledby="adminAuthModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adminAuthModalLabel">
+                    <i class="fas fa-shield-alt text-warning me-2"></i>
+                    Admin Authentication Required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-lock fa-3x text-warning mb-3"></i>
+                    <p class="text-muted">This information is restricted to administrators only. Please enter your password to continue.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminPassword" class="form-label">Password:</label>
+                    <input type="password" 
+                           class="form-control" 
+                           id="adminPassword" 
+                           placeholder="Enter your password"
+                           autocomplete="current-password">
+                </div>
+                
+                <div id="adminPasswordError" class="alert alert-danger mt-3" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="verifyAdminPassword()">
+                    <i class="fas fa-unlock me-2"></i>Verify Access
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.net-profit-blur {
+    position: relative;
+}
+
+.blur-text {
+    filter: blur(3px);
+    -webkit-filter: blur(3px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.admin-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(1px);
+}
+
+.admin-lock-overlay:hover {
+    background: rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(2px);
+}
+
+.admin-lock-overlay i {
+    font-size: 1.5rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.admin-lock-overlay small {
+    color: #6c757d;
+    font-size: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+#netProfitSection {
+    transition: all 0.3s ease;
+}
+
+#netProfitSection:hover .admin-lock-overlay {
+    transform: scale(1.02);
+}
+
+/* Modal styling */
+#adminAuthModal .modal-content {
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+}
+
+#adminAuthModal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+#adminAuthModal .btn-close {
+    filter: invert(1);
+}
+
+#adminAuthModal .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Admin Protected Content Styles */
+.admin-protected-content {
+    filter: blur(4px);
+    -webkit-filter: blur(4px);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.admin-access-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(1px);
+    z-index: 2;
+}
+
+.admin-access-overlay:hover {
+    background: rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(2px);
+    transform: scale(1.02);
+}
+
+.admin-access-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #6c757d;
+}
+
+.admin-lock-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    color: #6c757d;
+    animation: lockPulse 2s infinite;
+}
+
+.admin-access-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+@keyframes lockPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Ensure parent cards have proper positioning */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+</style>
 {% endblock %}
