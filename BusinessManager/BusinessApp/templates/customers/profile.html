@@ -1,0 +1,1010 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-md-4">
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2">
+                {% if customer.is_credit_approved and customer.available_credit > 0 %}
+                    <a href="{% url 'credit_sale_add' %}?customer={{ customer.pk }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>New Credit Sale
+                    </a>
+                {% endif %}
+                <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Edit Customer
+                </a>
+                <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column - Customer Info -->
+        <div class="col-12 col-lg-4">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h4 class="profile-name">{{ customer.name }}</h4>
+                    <p class="profile-subtitle">Customer #{{ customer.id }}</p>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="detail-item">
+                        <div class="detail-icon phone">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value">{{ customer.phone|default:"Not provided" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon email">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Email</span>
+                            <span class="detail-value">{{ customer.email|default:"Not provided" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon address">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Address</span>
+                            <span class="detail-value">{{ customer.address|default:"Not provided" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon date">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Joined</span>
+                            <span class="detail-value">{{ customer.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credit Information -->
+            <div class="credit-card">
+                <div class="credit-header">
+                    <h5><i class="fas fa-credit-card me-2"></i>Credit Information</h5>
+                    <span class="credit-status {% if customer.is_credit_approved %}approved{% else %}not-approved{% endif %}">
+                        {% if customer.is_credit_approved %}
+                            <i class="fas fa-check-circle me-1"></i>Approved
+                        {% else %}
+                            <i class="fas fa-times-circle me-1"></i>Not Approved
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if customer.is_credit_approved %}
+                    <div class="credit-stats">
+                        <div class="credit-stat primary">
+                            <div class="stat-value">TSh {{ customer.credit_limit|floatformat:0 }}</div>
+                            <div class="stat-label">Credit Limit</div>
+                        </div>
+                        <div class="credit-stat danger">
+                            <div class="stat-value">TSh {{ total_debt|floatformat:0 }}</div>
+                            <div class="stat-label">Current Debt</div>
+                        </div>
+                        <div class="credit-stat success">
+                            <div class="stat-value">TSh {{ available_credit|floatformat:0 }}</div>
+                            <div class="stat-label">Available</div>
+                        </div>
+                    </div>
+                    
+                    {% if customer.credit_limit > 0 %}
+                        {% widthratio total_debt customer.credit_limit 100 as usage_percentage %}
+                        <div class="credit-progress">
+                            <div class="progress-header">
+                                <span>Credit Usage</span>
+                                <span class="percentage">{{ usage_percentage }}%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar {% if usage_percentage > 80 %}danger{% elif usage_percentage > 60 %}warning{% else %}success{% endif %}" 
+                                     style="width: {{ usage_percentage }}%"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="credit-not-approved">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>This customer is not approved for credit purchases.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column - Activity & Stats -->
+        <div class="col-12 col-lg-8">
+            <!-- Stats Row -->
+            <div class="stats-grid">
+                <div class="stat-box primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ debts.count }}</div>
+                        <div class="stat-text">Total Debts</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box danger">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">TSh {{ total_debt|floatformat:0 }}</div>
+                        <div class="stat-text">Outstanding</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box success">
+                    <div class="stat-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">TSh {{ total_paid|floatformat:0 }}</div>
+                        <div class="stat-text">Total Paid</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ overdue_debts.count }}</div>
+                        <div class="stat-text">Overdue</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Tabs -->
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="debts">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>
+                            Debt History
+                            <span class="tab-badge">{{ debts.count }}</span>
+                        </button>
+                        <button class="tab-btn" data-tab="payments">
+                            <i class="fas fa-money-bill-wave me-2"></i>
+                            Payment History
+                            <span class="tab-badge">{{ recent_payments.count }}</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="activity-content">
+                    <!-- Debts Tab -->
+                    <div class="tab-content active" id="debts-content">
+                        {% if debts %}
+                            <div class="table-container">
+                                <table class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Sale Info</th>
+                                            <th>Amount</th>
+                                            <th class="d-none d-md-table-cell">Paid</th>
+                                            <th>Balance</th>
+                                            <th class="d-none d-lg-table-cell">Due Date</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for debt in debts %}
+                                        <tr>
+                                            <td>
+                                                <div class="sale-info">
+                                                    <div class="sale-date">{{ debt.sale.sale_date|date:"M d, Y" }}</div>
+                                                    <div class="sale-id">Sale #{{ debt.sale.id }}</div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="amount primary">TSh {{ debt.total_amount|floatformat:0 }}</div>
+                                            </td>
+                                            <td class="d-none d-md-table-cell">
+                                                <div class="amount success">TSh {{ debt.amount_paid|floatformat:0 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="amount {% if debt.remaining_balance > 0 %}danger{% else %}success{% endif %}">
+                                                    TSh {{ debt.remaining_balance|floatformat:0 }}
+                                                </div>
+                                            </td>
+                                            <td class="d-none d-lg-table-cell">
+                                                <div class="due-date">
+                                                    <div>{{ debt.due_date|date:"M d, Y" }}</div>
+                                                    {% if debt.is_overdue %}
+                                                        <div class="overdue-text">{{ debt.days_overdue }} days overdue</div>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge {{ debt.status }}">
+                                                    {% if debt.status == 'outstanding' %}Outstanding
+                                                    {% elif debt.status == 'partial' %}Partial
+                                                    {% elif debt.status == 'paid' %}Paid
+                                                    {% elif debt.status == 'overdue' %}Overdue
+                                                    {% elif debt.status == 'written_off' %}Written Off
+                                                    {% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if debt.remaining_balance > 0 %}
+                                                    <a href="{% url 'debt_payment' debt.pk %}" class="action-btn pay">
+                                                        <i class="fas fa-money-bill-wave"></i>
+                                                        <span class="d-none d-lg-inline ms-1">Pay</span>
+                                                    </a>
+                                                {% else %}
+                                                    <span class="action-btn paid">
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                                <h5>No Debt History</h5>
+                                <p>This customer has no credit purchases yet.</p>
+                                {% if customer.is_credit_approved %}
+                                    <a href="{% url 'credit_sale_add' %}?customer={{ customer.pk }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Create First Credit Sale
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Payments Tab -->
+                    <div class="tab-content" id="payments-content">
+                        {% if recent_payments %}
+                            <div class="table-container">
+                                <table class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Payment Date</th>
+                                            <th>Amount</th>
+                                            <th class="d-none d-md-table-cell">Notes</th>
+                                            <th class="d-none d-lg-table-cell">Balance After</th>
+                                            <th class="d-none d-md-table-cell">Recorded By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in recent_payments %}
+                                        <tr>
+                                            <td>
+                                                <div class="payment-date">
+                                                    <div>{{ payment.payment_date|date:"M d, Y" }}</div>
+                                                    <div class="payment-time">{{ payment.payment_date|time:"H:i" }}</div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="amount success">TSh {{ payment.amount_paid|floatformat:0 }}</div>
+                                            </td>
+                                            <td class="d-none d-md-table-cell">
+                                                <div class="notes">{{ payment.notes|default:"No notes" }}</div>
+                                            </td>
+                                            <td class="d-none d-lg-table-cell">
+                                                <div class="amount">TSh {{ payment.debt.remaining_balance|floatformat:0 }}</div>
+                                            </td>
+                                            <td class="d-none d-md-table-cell">
+                                                <div class="recorded-by">
+                                                    <i class="fas fa-user-circle me-2"></i>
+                                                    {{ payment.recorded_by.username }}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <h5>No Payment History</h5>
+                                <p>No payments have been recorded for this customer yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary: #3b82f6;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #06b6d4;
+    --light: #f8fafc;
+    --dark: #1e293b;
+    --gray: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Base Styles */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    padding: 10px 16px;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Profile Card */
+.profile-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+    padding: 32px 24px;
+    text-align: center;
+    color: white;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 32px;
+    backdrop-filter: blur(10px);
+}
+
+.profile-name {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.profile-subtitle {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 14px;
+}
+
+.profile-details {
+    padding: 24px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    font-size: 18px;
+}
+
+.detail-icon.phone { background: rgba(59, 130, 246, 0.1); color: var(--primary); }
+.detail-icon.email { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.detail-icon.address { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+.detail-icon.date { background: rgba(6, 182, 212, 0.1); color: var(--info); }
+
+.detail-content {
+    flex: 1;
+}
+
+.detail-label {
+    display: block;
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    display: block;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+/* Credit Card */
+.credit-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.credit-header {
+    background: linear-gradient(135deg, var(--info) 0%, #0891b2 100%);
+    padding: 20px 24px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.credit-header h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.credit-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.credit-status.approved { background: rgba(16, 185, 129, 0.2); }
+.credit-status.not-approved { background: rgba(239, 68, 68, 0.2); }
+
+.credit-stats {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.credit-stat {
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+}
+
+.credit-stat.primary { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); }
+.credit-stat.danger { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
+.credit-stat.success { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); }
+
+.credit-stat:nth-child(n+2) {
+    grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+    .credit-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    .credit-stat:first-child {
+        grid-column: span 2;
+    }
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.credit-stat.primary .stat-value { color: var(--primary); }
+.credit-stat.danger .stat-value { color: var(--danger); }
+.credit-stat.success .stat-value { color: var(--success); }
+
+.stat-label {
+    font-size: 12px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.credit-progress {
+    padding: 0 24px 24px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.percentage {
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+}
+
+.progress-bar.success { background: var(--success); }
+.progress-bar.warning { background: var(--warning); }
+.progress-bar.danger { background: var(--danger); }
+
+.credit-not-approved {
+    padding: 24px;
+    text-align: center;
+    color: var(--gray);
+}
+
+.credit-not-approved i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--warning);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-box {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    color: white;
+    transition: transform 0.2s ease;
+}
+
+.stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.9;
+}
+
+.stat-box.primary::before { background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%); }
+.stat-box.danger::before { background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); }
+.stat-box.success::before { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
+.stat-box.warning::before { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); }
+
+.stat-box:hover {
+    transform: translateY(-4px);
+}
+
+.stat-icon,
+.stat-content {
+    position: relative;
+    z-index: 2;
+}
+
+.stat-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.8;
+}
+
+.stat-number {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.stat-text {
+    font-size: 12px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Activity Card */
+.activity-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.activity-header {
+    background: var(--light);
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-buttons {
+    display: flex;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 20px 24px;
+    background: none;
+    border: none;
+    font-weight: 500;
+    color: var(--gray);
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    background: white;
+}
+
+.tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background: var(--primary);
+    transition: all 0.2s ease;
+    transform: translateX(-50%);
+}
+
+.tab-btn.active::after {
+    width: 100%;
+}
+
+.tab-badge {
+    background: var(--gray);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tab-btn.active .tab-badge {
+    background: var(--primary);
+}
+
+.activity-content {
+    padding: 32px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.modern-table th {
+    background: var(--light);
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modern-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.modern-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.sale-info .sale-date {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.sale-info .sale-id {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 2px;
+}
+
+.amount {
+    font-weight: 700;
+}
+
+.amount.primary { color: var(--primary); }
+.amount.success { color: var(--success); }
+.amount.danger { color: var(--danger); }
+
+.due-date .overdue-text {
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.outstanding { background: rgba(251, 191, 36, 0.2); color: #92400e; }
+.status-badge.partial { background: rgba(6, 182, 212, 0.2); color: #0e7490; }
+.status-badge.paid { background: rgba(16, 185, 129, 0.2); color: #065f46; }
+.status-badge.overdue { background: rgba(239, 68, 68, 0.2); color: #991b1b; }
+.status-badge.written_off { background: rgba(107, 114, 128, 0.2); color: #374151; }
+
+.action-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.action-btn.pay {
+    background: var(--success);
+    color: white;
+}
+
+.action-btn.pay:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.action-btn.paid {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success);
+}
+
+.payment-date .payment-time {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 2px;
+}
+
+.notes {
+    color: var(--gray);
+}
+
+.recorded-by {
+    display: flex;
+    align-items: center;
+    color: var(--gray);
+    font-size: 14px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 64px 32px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    color: var(--gray);
+    opacity: 0.5;
+    margin-bottom: 24px;
+}
+
+.empty-state h5 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: var(--gray);
+    margin-bottom: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .stat-number {
+        font-size: 16px;
+    }
+    
+    .activity-content {
+        padding: 16px;
+    }
+    
+    .tab-btn {
+        padding: 16px 12px;
+        font-size: 14px;
+    }
+    
+    .modern-table th,
+    .modern-table td {
+        padding: 12px 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-header {
+        padding: 24px 16px;
+    }
+    
+    .profile-details {
+        padding: 16px;
+    }
+    
+    .credit-stats {
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .credit-stat {
+        padding: 16px;
+    }
+    
+    .stat-value {
+        font-size: 18px;
+    }
+    
+    .stat-box {
+        padding: 16px;
+    }
+    
+    .stat-number {
+        font-size: 14px;
+    }
+    
+    .stat-icon {
+        font-size: 24px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Show corresponding content
+            const targetContent = document.getElementById(targetTab + '-content');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+    
+    // Animate progress bar on load
+    const progressBar = document.querySelector('.progress-bar');
+    if (progressBar) {
+        const width = progressBar.style.width;
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.width = width;
+        }, 300);
+    }
+    
+    // Animate stat boxes on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe stat boxes
+    document.querySelectorAll('.stat-box').forEach((box, index) => {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(20px)';
+        box.style.transition = `all 0.6s ease ${index * 0.1}s`;
+        observer.observe(box);
+    });
+});
+</script>
+{% endblock %}

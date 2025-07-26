@@ -1,0 +1,1122 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-md-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                        <div class="mb-2 mb-md-0">
+                            <h3 class="card-title mb-1">{{ title }}</h3>
+                            <p class="text-muted mb-0 small">Create a new credit sale for approved customers</p>
+                        </div>
+                        <div class="btn-group flex-wrap" role="group">
+                            <a href="{% url 'sale_list' %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-list me-1"></i> 
+                                <span class="d-none d-sm-inline">All Sales</span>
+                                <span class="d-sm-none">Sales</span>
+                            </a>
+                            <a href="{% url 'debt_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-arrow-left me-1"></i> 
+                                <span class="d-none d-sm-inline">Back to Debts</span>
+                                <span class="d-sm-none">Back</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="needs-validation" novalidate id="credit-sale-form">
+        {% csrf_token %}
+        
+        <div class="row g-3 g-md-4">
+            <!-- Customer Selection - Full width on mobile, half on larger screens -->
+            <div class="col-12 col-xl-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user me-2"></i>Customer Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Customer Selection Mode Toggle -->
+                        <div class="mb-3">
+                            <label class="form-label">Customer Selection</label>
+                            <div class="btn-group w-100" role="group" id="customer-mode-toggle">
+                                <input type="radio" class="btn-check" name="customer_mode" id="select_existing" value="select" checked>
+                                <label class="btn btn-outline-primary" for="select_existing">
+                                    <i class="fas fa-list me-1"></i>Select Existing
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="customer_mode" id="add_new" value="new">
+                                <label class="btn btn-outline-success" for="add_new">
+                                    <i class="fas fa-user-plus me-1"></i>Add New Customer
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Existing Customer Selection -->
+                        <div class="mb-3" id="existing-customer-section">
+                            <label for="customer" class="form-label required">Select Customer</label>
+                            <select id="customer" name="customer" class="form-select" onchange="updateCustomerInfo()">
+                                <option value="">Choose a customer...</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.id }}" 
+                                            data-credit-limit="{{ customer.credit_limit }}"
+                                            data-current-debt="{{ customer.current_debt }}"
+                                            data-available-credit="{{ customer.available_credit }}"
+                                            data-phone="{{ customer.phone }}">
+                                        {{ customer.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a customer.
+                            </div>
+                        </div>
+
+                        <!-- New Customer Input -->
+                        <div class="mb-3" id="new-customer-section" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="new_customer_name" class="form-label required">Customer Name</label>
+                                    <input type="text" id="new_customer_name" name="new_customer_name" class="form-control" 
+                                           placeholder="Enter customer name">
+                                    <div class="invalid-feedback">
+                                        Please enter customer name.
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="new_customer_phone" class="form-label required">Phone Number</label>
+                                    <input type="tel" id="new_customer_phone" name="new_customer_phone" class="form-control" 
+                                           placeholder="Enter phone number">
+                                    <div class="invalid-feedback">
+                                        Please enter phone number.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-12 col-md-6">
+                                    <label for="new_customer_email" class="form-label">Email (Optional)</label>
+                                    <input type="email" id="new_customer_email" name="new_customer_email" class="form-control" 
+                                           placeholder="Enter email address">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="new_customer_credit_limit" class="form-label required">Credit Limit</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">TSh</span>
+                                        <input type="number" id="new_customer_credit_limit" name="new_customer_credit_limit" 
+                                               class="form-control" min="0" placeholder="0" value="50000">
+                                    </div>
+                                    <div class="form-text">Default credit limit for new customer</div>
+                                    <div class="invalid-feedback">
+                                        Please enter credit limit.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- New Customer Info Display -->
+                            <div class="alert alert-success border-0 shadow-sm mt-3" id="new-customer-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle me-3 fa-2x text-success"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">New Customer</h6>
+                                        <p class="mb-0">This customer will be created automatically when you submit the sale.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Info Display -->
+                        <div id="customer-info" style="display: none;">
+                            <div class="alert alert-info border-0 shadow-sm">
+                                <h6 class="alert-heading mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>Customer Details
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">Phone</small>
+                                            <strong id="customer-phone" class="text-dark">-</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">Credit Limit</small>
+                                            <strong id="customer-credit-limit" class="text-info">TSh 0</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">Current Debt</small>
+                                            <strong id="customer-current-debt" class="text-danger">TSh 0</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">Available Credit</small>
+                                            <strong id="customer-available-credit" class="text-success">TSh 0</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="due_date" class="form-label required">Due Date</label>
+                            <input type="date" id="due_date" name="due_date" class="form-control" required
+                                   min="{{ today|date:'Y-m-d' }}">
+                            <div class="form-text">
+                                When payment is expected
+                            </div>
+                            <div class="invalid-feedback">
+                                Please select a due date.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Selection and Summary -->
+            <div class="col-12 col-xl-8">
+                <!-- Products Card -->
+                <div class="card shadow-sm mb-3 mb-md-4">
+                    <div class="card-header bg-success text-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-shopping-cart me-2"></i>Products
+                            </h5>
+                            <button type="button" class="btn btn-light btn-sm" onclick="addProductRow()">
+                                <i class="fas fa-plus me-1"></i> Add Product
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="products-container">
+                            <!-- Product rows will be added here -->
+                        </div>
+                        
+                        <div class="alert alert-warning border-0 shadow-sm" id="no-products-alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle me-3 fa-2x text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-1">No Products Added</h6>
+                                    <p class="mb-2">Please add at least one product to create a credit sale.</p>
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="addProductRow()">
+                                        <i class="fas fa-plus me-1"></i> Add Product
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sale Summary Card -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white py-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calculator me-2"></i>Sale Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 text-center">
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 bg-primary bg-opacity-10 rounded">
+                                    <h6 class="text-muted mb-2">Total Amount</h6>
+                                    <h4 class="text-primary mb-0" id="total-amount">TSh 0</h4>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 bg-success bg-opacity-10 rounded">
+                                    <h6 class="text-muted mb-2">Available Credit</h6>
+                                    <h4 class="text-success mb-0" id="summary-available-credit">TSh 0</h4>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                    <h6 class="text-muted mb-2">Credit Status</h6>
+                                    <h4 class="mb-0" id="credit-status">
+                                        <span class="badge bg-secondary">Select Customer</span>
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="credit-warning" class="alert alert-danger border-0 shadow-sm mt-3" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle me-3 fa-2x text-danger"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Credit Limit Exceeded!</h6>
+                                    <p class="mb-0">This sale amount exceeds the customer's available credit.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions - Sticky footer on mobile -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body py-3">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                            <a href="{% url 'debt_list' %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg order-1 order-sm-2" id="submit-btn" disabled>
+                                <i class="fas fa-save me-2"></i> Create Credit Sale
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Product Row Template -->
+<template id="product-row-template">
+    <div class="product-row border rounded-3 p-3 mb-3 shadow-sm bg-light">
+        <div class="row g-2 g-md-3">
+            <div class="col-12 col-md-4 col-lg-5">
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Product</label>
+                    <select name="product_id" class="form-select form-select-sm product-select" required onchange="updateProductPrice(this)">
+                        <option value="">Select product...</option>
+                        {% for product in products %}
+                            <option value="{{ product.id }}" 
+                                    data-price="{{ product.selling_price }}"
+                                    data-stock="{{ product.stock_quantity }}">
+                                {{ product.name }} (Stock: {{ product.stock_quantity }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Please select a product.</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Qty</label>
+                    <input type="number" name="quantity" class="form-control form-control-sm quantity-input" 
+                           min="1" required onchange="calculateRowTotal(this)" placeholder="1">
+                    <div class="invalid-feedback">Enter quantity.</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Unit Price</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">TSh</span>
+                        <input type="number" class="form-control unit-price" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="col-8 col-md-3 col-lg-2">
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Total</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">TSh</span>
+                        <input type="number" class="form-control row-total fw-bold" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-1">
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold d-none d-md-block">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeProductRow(this)" title="Remove product">
+                            <i class="fas fa-trash"></i>
+                            <span class="d-none d-lg-inline ms-1">Remove</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile stock warning -->
+        <div class="stock-warning d-md-none mt-2" style="display: none;">
+            <small class="text-warning">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                <span class="stock-message"></span>
+            </small>
+        </div>
+    </div>
+</template>
+
+<script>
+let productRowCount = 0;
+let currentCustomer = null;
+
+function addProductRow() {
+    const template = document.getElementById('product-row-template');
+    const container = document.getElementById('products-container');
+    const noProductsAlert = document.getElementById('no-products-alert');
+    
+    const clone = template.content.cloneNode(true);
+    container.appendChild(clone);
+    
+    productRowCount++;
+    noProductsAlert.style.display = 'none';
+    
+    updateSubmitButton();
+}
+
+function removeProductRow(button) {
+    const row = button.closest('.product-row');
+    row.remove();
+    
+    productRowCount--;
+    const container = document.getElementById('products-container');
+    const noProductsAlert = document.getElementById('no-products-alert');
+    
+    if (container.children.length === 0) {
+        noProductsAlert.style.display = 'block';
+    }
+    
+    calculateTotalAmount();
+    updateSubmitButton();
+}
+
+function updateProductPrice(select) {
+    const row = select.closest('.product-row');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const quantityInput = row.querySelector('.quantity-input');
+    const stockWarning = row.querySelector('.stock-warning');
+    
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption.value) {
+        const price = parseFloat(selectedOption.dataset.price);
+        const stock = parseInt(selectedOption.dataset.stock);
+        
+        unitPriceInput.value = price.toLocaleString();
+        quantityInput.max = stock;
+        quantityInput.value = Math.min(quantityInput.value || 1, stock);
+        
+        // Show stock warning on mobile if stock is low
+        if (stock < 10 && stockWarning) {
+            stockWarning.style.display = 'block';
+            stockWarning.querySelector('.stock-message').textContent = 
+                `Low stock: Only ${stock} units remaining`;
+        } else if (stockWarning) {
+            stockWarning.style.display = 'none';
+        }
+        
+        calculateRowTotal(quantityInput);
+        
+        // Add visual feedback
+        select.classList.add('is-valid');
+        select.classList.remove('is-invalid');
+    } else {
+        unitPriceInput.value = '';
+        quantityInput.max = '';
+        quantityInput.value = '';
+        if (stockWarning) {
+            stockWarning.style.display = 'none';
+        }
+        calculateRowTotal(quantityInput);
+        
+        select.classList.remove('is-valid');
+    }
+}
+
+function calculateRowTotal(input) {
+    const row = input.closest('.product-row');
+    const unitPriceValue = row.querySelector('.unit-price').value.replace(/,/g, '') || '0';
+    const unitPrice = parseFloat(unitPriceValue) || 0;
+    const quantity = parseFloat(input.value) || 0;
+    const totalInput = row.querySelector('.row-total');
+    
+    const total = unitPrice * quantity;
+    totalInput.value = total.toLocaleString();
+    
+    // Add visual feedback for quantity input
+    if (quantity > 0) {
+        input.classList.add('is-valid');
+        input.classList.remove('is-invalid');
+    } else {
+        input.classList.remove('is-valid');
+    }
+    
+    calculateTotalAmount();
+}
+
+function calculateTotalAmount() {
+    const rowTotals = document.querySelectorAll('.row-total');
+    let totalAmount = 0;
+    
+    rowTotals.forEach(input => {
+        const value = input.value.replace(/,/g, '') || '0';
+        totalAmount += parseFloat(value) || 0;
+    });
+    
+    // Animate the total change
+    const totalElement = document.getElementById('total-amount');
+    totalElement.style.transform = 'scale(1.1)';
+    totalElement.textContent = 'TSh ' + totalAmount.toLocaleString();
+    
+    setTimeout(() => {
+        totalElement.style.transform = 'scale(1)';
+    }, 200);
+    
+    updateCreditStatus(totalAmount);
+    updateSubmitButton();
+}
+
+function updateCustomerInfo() {
+    const customerSelect = document.getElementById('customer');
+    const customerInfo = document.getElementById('customer-info');
+    const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        const creditLimit = parseFloat(selectedOption.dataset.creditLimit);
+        const currentDebt = parseFloat(selectedOption.dataset.currentDebt);
+        const availableCredit = parseFloat(selectedOption.dataset.availableCredit);
+        const phone = selectedOption.dataset.phone;
+        
+        document.getElementById('customer-phone').textContent = phone || 'Not provided';
+        document.getElementById('customer-credit-limit').textContent = 'TSh ' + creditLimit.toLocaleString();
+        document.getElementById('customer-current-debt').textContent = 'TSh ' + currentDebt.toLocaleString();
+        document.getElementById('customer-available-credit').textContent = 'TSh ' + availableCredit.toLocaleString();
+        document.getElementById('summary-available-credit').textContent = 'TSh ' + availableCredit.toLocaleString();
+        
+        currentCustomer = {
+            creditLimit: creditLimit,
+            currentDebt: currentDebt,
+            availableCredit: availableCredit
+        };
+        
+        // Animate customer info appearance
+        customerInfo.style.display = 'block';
+        customerInfo.style.opacity = '0';
+        customerInfo.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+            customerInfo.style.transition = 'all 0.3s ease';
+            customerInfo.style.opacity = '1';
+            customerInfo.style.transform = 'translateY(0)';
+        }, 10);
+        
+        const totalAmountText = document.getElementById('total-amount').textContent.replace(/[^\d]/g, '');
+        const totalAmount = parseFloat(totalAmountText) || 0;
+        updateCreditStatus(totalAmount);
+        
+        // Add validation feedback
+        customerSelect.classList.add('is-valid');
+        customerSelect.classList.remove('is-invalid');
+    } else {
+        customerInfo.style.display = 'none';
+        currentCustomer = null;
+        document.getElementById('summary-available-credit').textContent = 'TSh 0';
+        document.getElementById('credit-status').innerHTML = '<span class="badge bg-secondary">Select Customer</span>';
+        
+        customerSelect.classList.remove('is-valid');
+    }
+    
+    updateSubmitButton();
+}
+
+function updateNewCustomerInfo() {
+    const nameInput = document.getElementById('new_customer_name');
+    const phoneInput = document.getElementById('new_customer_phone');
+    const creditLimitInput = document.getElementById('new_customer_credit_limit');
+    const customerInfo = document.getElementById('customer-info');
+    
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const creditLimit = parseFloat(creditLimitInput.value) || 0;
+    
+    if (name && phone && creditLimit > 0) {
+        // Update customer info display for new customer
+        document.getElementById('customer-phone').textContent = phone;
+        document.getElementById('customer-credit-limit').textContent = 'TSh ' + creditLimit.toLocaleString();
+        document.getElementById('customer-current-debt').textContent = 'TSh 0';
+        document.getElementById('customer-available-credit').textContent = 'TSh ' + creditLimit.toLocaleString();
+        document.getElementById('summary-available-credit').textContent = 'TSh ' + creditLimit.toLocaleString();
+        
+        currentCustomer = {
+            creditLimit: creditLimit,
+            currentDebt: 0,
+            availableCredit: creditLimit
+        };
+        
+        // Show customer info
+        customerInfo.style.display = 'block';
+        customerInfo.style.opacity = '1';
+        customerInfo.style.transform = 'translateY(0)';
+        
+        const totalAmountText = document.getElementById('total-amount').textContent.replace(/[^\d]/g, '');
+        const totalAmount = parseFloat(totalAmountText) || 0;
+        updateCreditStatus(totalAmount);
+        
+        // Add validation feedback
+        nameInput.classList.add('is-valid');
+        phoneInput.classList.add('is-valid');
+        creditLimitInput.classList.add('is-valid');
+    } else {
+        customerInfo.style.display = 'none';
+        currentCustomer = null;
+        document.getElementById('summary-available-credit').textContent = 'TSh 0';
+        document.getElementById('credit-status').innerHTML = '<span class="badge bg-secondary">Enter Customer Details</span>';
+        
+        // Remove validation feedback
+        [nameInput, phoneInput, creditLimitInput].forEach(input => {
+            if (input.value.trim()) {
+                input.classList.add('is-valid');
+                input.classList.remove('is-invalid');
+            } else {
+                input.classList.remove('is-valid');
+            }
+        });
+    }
+    
+    updateSubmitButton();
+}
+
+function toggleCustomerMode() {
+    const selectMode = document.getElementById('select_existing').checked;
+    const existingSection = document.getElementById('existing-customer-section');
+    const newSection = document.getElementById('new-customer-section');
+    const customerInfo = document.getElementById('customer-info');
+    
+    if (selectMode) {
+        // Show existing customer selection
+        existingSection.style.display = 'block';
+        newSection.style.display = 'none';
+        
+        // Clear new customer inputs
+        document.getElementById('new_customer_name').value = '';
+        document.getElementById('new_customer_phone').value = '';
+        document.getElementById('new_customer_email').value = '';
+        document.getElementById('new_customer_credit_limit').value = '50000';
+        
+        // Update based on selected customer
+        updateCustomerInfo();
+    } else {
+        // Show new customer form
+        existingSection.style.display = 'none';
+        newSection.style.display = 'block';
+        
+        // Clear existing customer selection
+        document.getElementById('customer').value = '';
+        
+        // Update based on new customer inputs
+        updateNewCustomerInfo();
+    }
+    
+    updateSubmitButton();
+}
+
+function updateCreditStatus(saleAmount) {
+    const creditStatusElement = document.getElementById('credit-status');
+    const creditWarning = document.getElementById('credit-warning');
+    
+    if (!currentCustomer) {
+        creditStatusElement.innerHTML = '<span class="badge bg-secondary">Select Customer</span>';
+        creditWarning.style.display = 'none';
+        return;
+    }
+    
+    if (saleAmount <= currentCustomer.availableCredit) {
+        creditStatusElement.innerHTML = '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Approved</span>';
+        creditWarning.style.display = 'none';
+    } else {
+        creditStatusElement.innerHTML = '<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Exceeded</span>';
+        creditWarning.style.display = 'block';
+        
+        // Animate warning appearance
+        creditWarning.style.animation = 'slideIn 0.3s ease';
+    }
+}
+
+function updateSubmitButton() {
+    const submitBtn = document.getElementById('submit-btn');
+    const dueDateInput = document.getElementById('due_date');
+    const productRows = document.querySelectorAll('.product-row');
+    
+    // Check customer information based on mode
+    let hasCustomer = false;
+    const selectMode = document.getElementById('select_existing').checked;
+    
+    if (selectMode) {
+        // Existing customer mode
+        const customerSelect = document.getElementById('customer');
+        hasCustomer = customerSelect.value;
+    } else {
+        // New customer mode
+        const nameInput = document.getElementById('new_customer_name');
+        const phoneInput = document.getElementById('new_customer_phone');
+        const creditLimitInput = document.getElementById('new_customer_credit_limit');
+        
+        hasCustomer = nameInput.value.trim() && phoneInput.value.trim() && 
+                     creditLimitInput.value && parseFloat(creditLimitInput.value) > 0;
+    }
+    
+    const hasDueDate = dueDateInput.value;
+    const hasProducts = productRows.length > 0;
+    
+    let allProductsValid = true;
+    productRows.forEach(row => {
+        const productSelect = row.querySelector('.product-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        
+        if (!productSelect.value || !quantityInput.value || quantityInput.value <= 0) {
+            allProductsValid = false;
+        }
+    });
+    
+    const totalAmountText = document.getElementById('total-amount').textContent.replace(/[^\d]/g, '');
+    const totalAmount = parseFloat(totalAmountText) || 0;
+    const creditOk = currentCustomer && totalAmount <= currentCustomer.availableCredit;
+    
+    if (hasCustomer && hasDueDate && hasProducts && allProductsValid && creditOk && totalAmount > 0) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-outline-success');
+        submitBtn.classList.add('btn-success');
+    } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-outline-success');
+    }
+    
+    // Add validation feedback for due date
+    if (hasDueDate) {
+        dueDateInput.classList.add('is-valid');
+        dueDateInput.classList.remove('is-invalid');
+    } else {
+        dueDateInput.classList.remove('is-valid');
+    }
+}
+
+// Initialize with one product row
+document.addEventListener('DOMContentLoaded', function() {
+    addProductRow();
+    
+    // Set default due date to 30 days from now
+    const today = new Date();
+    const futureDate = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    document.getElementById('due_date').value = futureDate.toISOString().split('T')[0];
+    
+    // Add customer mode toggle event listeners
+    document.getElementById('select_existing').addEventListener('change', toggleCustomerMode);
+    document.getElementById('add_new').addEventListener('change', toggleCustomerMode);
+    
+    // Add event listeners for new customer inputs
+    document.getElementById('new_customer_name').addEventListener('input', updateNewCustomerInfo);
+    document.getElementById('new_customer_phone').addEventListener('input', updateNewCustomerInfo);
+    document.getElementById('new_customer_credit_limit').addEventListener('input', updateNewCustomerInfo);
+    
+    // Add form submission handler with loading state
+    const form = document.getElementById('credit-sale-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    form.addEventListener('submit', function(e) {
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Add loading state
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+        
+        // Show loading text
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Sale...';
+        
+        // If form validation fails, restore button
+        setTimeout(() => {
+            if (form.classList.contains('was-validated') && !form.checkValidity()) {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }, 100);
+    });
+    
+    // Add responsive behavior for mobile
+    if (window.innerWidth <= 768) {
+        // Make action buttons sticky on mobile
+        const actionCard = document.querySelector('.row.mt-4 .card');
+        if (actionCard) {
+            actionCard.classList.add('sticky-actions');
+        }
+        
+        // Add swipe gesture for removing product rows on mobile
+        addSwipeGestures();
+    }
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + Enter to submit form
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !submitBtn.disabled) {
+            form.submit();
+        }
+        
+        // Ctrl/Cmd + Plus to add product
+        if ((e.ctrlKey || e.metaKey) && e.key === '+') {
+            e.preventDefault();
+            addProductRow();
+        }
+    });
+});
+
+// Add swipe gestures for mobile
+function addSwipeGestures() {
+    let startX, startY, distX, distY, threshold = 100, restraint = 100, allowedTime = 300, elapsedTime, startTime;
+    
+    document.addEventListener('touchstart', function(e) {
+        const touchobj = e.changedTouches[0];
+        startX = touchobj.pageX;
+        startY = touchobj.pageY;
+        startTime = new Date().getTime();
+    }, false);
+    
+    document.addEventListener('touchend', function(e) {
+        const touchobj = e.changedTouches[0];
+        distX = touchobj.pageX - startX;
+        distY = touchobj.pageY - startY;
+        elapsedTime = new Date().getTime() - startTime;
+        
+        if (elapsedTime <= allowedTime && Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {
+            const productRow = e.target.closest('.product-row');
+            if (productRow && distX < 0) { // Swipe left
+                const removeBtn = productRow.querySelector('button[onclick*="removeProductRow"]');
+                if (removeBtn) {
+                    removeBtn.click();
+                }
+            }
+        }
+    }, false);
+}
+
+// Enhanced product row management
+function addProductRow() {
+    const template = document.getElementById('product-row-template');
+    const container = document.getElementById('products-container');
+    const noProductsAlert = document.getElementById('no-products-alert');
+    
+    const clone = template.content.cloneNode(true);
+    const newRow = clone.querySelector('.product-row');
+    
+    // Add unique identifiers for better management
+    const rowId = 'product-row-' + Date.now();
+    newRow.setAttribute('data-row-id', rowId);
+    
+    container.appendChild(clone);
+    
+    productRowCount++;
+    noProductsAlert.style.display = 'none';
+    
+    // Focus on the product select for better UX
+    setTimeout(() => {
+        const productSelect = newRow.querySelector('.product-select');
+        if (productSelect) {
+            productSelect.focus();
+        }
+    }, 100);
+    
+    updateSubmitButton();
+}
+
+function removeProductRow(button) {
+    const row = button.closest('.product-row');
+    
+    // Add confirmation on mobile to prevent accidental deletion
+    if (window.innerWidth <= 768 && productRowCount > 1) {
+        if (!confirm('Remove this product from the sale?')) {
+            return;
+        }
+    }
+    
+    // Animate removal
+    row.style.transition = 'all 0.3s ease';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-100px)';
+    
+    setTimeout(() => {
+        row.remove();
+        
+        productRowCount--;
+        const container = document.getElementById('products-container');
+        const noProductsAlert = document.getElementById('no-products-alert');
+        
+        if (container.children.length === 0) {
+            noProductsAlert.style.display = 'block';
+        }
+        
+        calculateTotalAmount();
+        updateSubmitButton();
+    }, 300);
+}
+
+// Bootstrap form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+
+<style>
+.required::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.product-row {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.product-row:hover {
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.form-select, .form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.5em 0.75em;
+    border-radius: 8px;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+    }
+    
+    .product-row {
+        padding: 1rem !important;
+    }
+    
+    /* Stack form actions on mobile */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .d-flex.justify-content-between .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Hide less important text on very small screens */
+    .d-none-xs {
+        display: none !important;
+    }
+}
+
+/* Animation for product rows */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-row {
+    animation: slideIn 0.3s ease;
+}
+
+/* Custom scrollbar for mobile */
+@media (max-width: 768px) {
+    .table-responsive {
+        scrollbar-width: thin;
+        scrollbar-color: #007bff #f1f1f1;
+    }
+    
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #007bff;
+        border-radius: 10px;
+    }
+}
+
+/* Improved form validation styles */
+.is-invalid {
+    border-color: #dc3545;
+    animation: shake 0.6s;
+}
+
+@keyframes shake {
+    0%, 20%, 40%, 60%, 80% {
+        transform: translateX(-2px);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(2px);
+    }
+}
+
+/* Customer mode toggle buttons */
+.btn-check:checked + .btn {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+.btn-check:checked + .btn-outline-success {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
+}
+
+#customer-mode-toggle .btn {
+    transition: all 0.3s ease;
+}
+
+#customer-mode-toggle .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Animation for section transitions */
+#existing-customer-section, #new-customer-section {
+    transition: all 0.3s ease;
+}
+
+/* Loading state for submit button */
+.btn.loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Sticky action bar on mobile */
+@media (max-width: 768px) {
+    .sticky-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 1000;
+        margin-left: -10px;
+        margin-right: -10px;
+        border-radius: 0;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    }
+}
+
+template {
+    display: none !important;
+}
+</style>
+{% endblock %}

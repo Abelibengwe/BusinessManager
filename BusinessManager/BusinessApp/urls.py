@@ -63,9 +63,20 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('settings/', views.settings_view, name='settings'),
     
+    # Debt Management
+    path('debts/', views.debt_list, name='debt_list'),
+    path('customers/', views.customer_list, name='customer_list'),
+    path('customers/add/', views.customer_add, name='customer_add'),
+    path('customers/<int:pk>/edit/', views.customer_edit, name='customer_edit'),
+    path('customers/<int:pk>/profile/', views.customer_profile, name='customer_profile'),
+    path('debts/<int:pk>/payment/', views.debt_payment, name='debt_payment'),
+    path('sales/credit/', views.credit_sale_add, name='credit_sale_add'),
+    
     # API endpoints for AJAX
     path('api/dashboard-data/', views.dashboard_data_api, name='dashboard_data_api'),
     path('api/sales-chart/', views.sales_chart_api, name='sales_chart_api'),
+    path('api/services-chart/', views.services_chart_api, name='services_chart_api'),
     path('api/products/search/', views.product_search_api, name='product_search_api'),
     path('api/verify-admin-password/', views.verify_admin_password, name='verify_admin_password'),
+    path('api/customers/search/', views.customer_search_api, name='customer_search_api'),
 ]

@@ -1,0 +1,567 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-md-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                        <div class="mb-2 mb-md-0">
+                            <h3 class="card-title mb-1">{{ title }}</h3>
+                            <p class="text-muted mb-0 small">Manage and track all customer credit sales and debts</p>
+                        </div>
+                        <div class="btn-group flex-wrap" role="group">
+                            <a href="{% url 'credit_sale_add' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>
+                                <span class="d-none d-sm-inline">New Credit Sale</span>
+                                <span class="d-sm-none">New Sale</span>
+                            </a>
+                            <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-users me-1"></i>
+                                <span class="d-none d-sm-inline">Manage Customers</span>
+                                <span class="d-sm-none">Customers</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Filters & Search
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select name="status" id="status" class="form-select" onchange="document.getElementById('filter-form').submit()">
+                                    <option value="">All Status</option>
+                                    {% for value, display in debt_statuses %}
+                                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="customer" class="form-label">Customer</label>
+                                <select name="customer" id="customer" class="form-select" onchange="document.getElementById('filter-form').submit()">
+                                    <option value="">All Customers</option>
+                                    {% for customer in customers %}
+                                        <option value="{{ customer.id }}" {% if current_customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ customer.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-5">
+                                <label for="search" class="form-label">Search</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" name="search" id="search" class="form-control" 
+                                           placeholder="Search by customer name or phone..." 
+                                           value="{{ search_query }}">
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-1">
+                                <label class="form-label d-none d-lg-block">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-search me-1"></i>
+                                        <span class="d-none d-sm-inline">Filter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row g-3 g-md-4 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-primary bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-file-invoice-dollar text-primary fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-primary">{{ page_obj.paginator.count }}</h3>
+                                    <small class="text-muted">Total Debts</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-warning bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-warning">
+                                        {% with outstanding_count=0 %}
+                                            {% for debt in page_obj %}
+                                                {% if debt.status == 'outstanding' %}
+                                                    {% with outstanding_count=outstanding_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ outstanding_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">Outstanding</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-danger bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-clock text-danger fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-danger">
+                                        {% with overdue_count=0 %}
+                                            {% for debt in page_obj %}
+                                                {% if debt.status == 'overdue' %}
+                                                    {% with overdue_count=overdue_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ overdue_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">Overdue</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-success bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-success">
+                                        {% with paid_count=0 %}
+                                            {% for debt in page_obj %}
+                                                {% if debt.status == 'paid' %}
+                                                    {% with paid_count=paid_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ paid_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">Paid</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debts Table Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Debt Records
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Mobile-friendly responsive table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="px-3 py-3">Customer</th>
+                                    <th class="px-3 py-3 d-none d-md-table-cell">Sale Date</th>
+                                    <th class="px-3 py-3">Amount</th>
+                                    <th class="px-3 py-3 d-none d-lg-table-cell">Paid</th>
+                                    <th class="px-3 py-3">Balance</th>
+                                    <th class="px-3 py-3 d-none d-md-table-cell">Due Date</th>
+                                    <th class="px-3 py-3">Status</th>
+                                    <th class="px-3 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for debt in page_obj %}
+                                <tr class="debt-row" data-debt-id="{{ debt.id }}">
+                                    <td class="px-3 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <strong class="d-block">{{ debt.customer.name }}</strong>
+                                                <small class="text-muted">{{ debt.customer.phone|default:"No phone" }}</small>
+                                                <!-- Mobile-only: Show sale date -->
+                                                <small class="text-muted d-block d-md-none">
+                                                    <i class="fas fa-calendar me-1"></i>{{ debt.sale.sale_date|date:"M d, Y" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-md-table-cell">
+                                        <span class="text-muted">{{ debt.sale.sale_date|date:"M d, Y" }}</span>
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <strong class="text-info">TSh {{ debt.total_amount|floatformat:0 }}</strong>
+                                        <!-- Mobile-only: Show paid amount -->
+                                        <small class="text-success d-block d-lg-none">
+                                            Paid: TSh {{ debt.amount_paid|floatformat:0 }}
+                                        </small>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-lg-table-cell">
+                                        <span class="text-success">TSh {{ debt.amount_paid|floatformat:0 }}</span>
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <strong class="{% if debt.remaining_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                            TSh {{ debt.remaining_balance|floatformat:0 }}
+                                        </strong>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-md-table-cell">
+                                        <div>
+                                            <span class="text-muted">{{ debt.due_date|date:"M d, Y" }}</span>
+                                            {% if debt.is_overdue %}
+                                                <br><small class="badge bg-danger">Overdue</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        {% if debt.status == 'outstanding' %}
+                                            <span class="badge bg-warning">Outstanding</span>
+                                        {% elif debt.status == 'partial' %}
+                                            <span class="badge bg-info">Partial</span>
+                                        {% elif debt.status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% elif debt.status == 'overdue' %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% elif debt.status == 'written_off' %}
+                                            <span class="badge bg-secondary">Written Off</span>
+                                        {% endif %}
+                                        <!-- Mobile-only: Show due date and overdue status -->
+                                        <div class="d-md-none mt-1">
+                                            <small class="text-muted d-block">Due: {{ debt.due_date|date:"M d, Y" }}</small>
+                                            {% if debt.is_overdue %}
+                                                <small class="badge bg-danger">Overdue</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <div class="btn-group-vertical btn-group-sm" role="group">
+                                            {% if debt.remaining_balance > 0 %}
+                                                <a href="{% url 'debt_payment' debt.pk %}" class="btn btn-success btn-sm mb-1" title="Make Payment">
+                                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                                    <span class="d-none d-lg-inline">Pay</span>
+                                                </a>
+                                            {% endif %}
+                                            <a href="{% url 'customer_profile' debt.customer.pk %}" class="btn btn-info btn-sm" title="Customer Profile">
+                                                <i class="fas fa-user me-1"></i>
+                                                <span class="d-none d-lg-inline">Profile</span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                                            <h5>No debts found</h5>
+                                            <p>No debt records match your current filters.</p>
+                                            <a href="{% url 'credit_sale_add' %}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i> Create First Credit Sale
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="card shadow-sm mt-4">
+                <div class="card-body py-3">
+                    <nav aria-label="Debt pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="First Page">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Previous Page">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>  
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link bg-primary border-primary">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Next Page">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Last Page">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    document.getElementById('filter-form').submit();
+                }
+            }, 500);
+        });
+    }
+    
+    // Add row hover effects for better mobile interaction
+    const rows = document.querySelectorAll('.debt-row');
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && !e.target.closest('a') && !e.target.closest('button')) {
+                // On mobile, clicking a row could expand/collapse details
+                if (window.innerWidth <= 768) {
+                    this.classList.toggle('expanded');
+                }
+            }
+        });
+    });
+});
+
+// Add loading states for form submissions
+function showLoading() {
+    const submitButtons = document.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
+    });
+}
+</script>
+
+<style>
+.avatar-sm {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.debt-row {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.debt-row:hover {
+    background-color: rgba(0,123,255,0.05) !important;
+    transform: translateX(2px);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.4em 0.6em;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.form-select, .form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+    }
+    
+    .table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .btn-group-vertical .btn {
+        margin-bottom: 0.25rem;
+    }
+    
+    .debt-row.expanded {
+        background-color: rgba(0,123,255,0.1) !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+}
+
+/* Animation for statistics cards */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: slideInUp 0.5s ease;
+}
+
+/* Custom scrollbar */
+.table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: #007bff #f1f1f1;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 10px;
+}
+
+.page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+    color: #007bff;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

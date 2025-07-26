@@ -1,0 +1,587 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-md-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                        <div class="mb-2 mb-md-0">
+                            <h3 class="card-title mb-1">{{ title }}</h3>
+                            <p class="text-muted mb-0 small">Manage customers and their credit information</p>
+                        </div>
+                        <div class="btn-group flex-wrap" role="group">
+                            <a href="{% url 'customer_add' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-user-plus me-1"></i>
+                                <span class="d-none d-sm-inline">Add Customer</span>
+                                <span class="d-sm-none">Add</span>
+                            </a>
+                            <a href="{% url 'debt_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-file-invoice-dollar me-1"></i>
+                                <span class="d-none d-sm-inline">View Debts</span>
+                                <span class="d-sm-none">Debts</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>Search & Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="credit_filter" class="form-label">Credit Status</label>
+                                <select name="credit_filter" id="credit_filter" class="form-select" onchange="document.getElementById('filter-form').submit()">
+                                    <option value="">All Customers</option>
+                                    <option value="approved" {% if credit_filter == 'approved' %}selected{% endif %}>
+                                        Credit Approved
+                                    </option>
+                                    <option value="not_approved" {% if credit_filter == 'not_approved' %}selected{% endif %}>
+                                        Credit Not Approved
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-7">
+                                <label for="search" class="form-label">Search</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" name="search" id="search" class="form-control" 
+                                           placeholder="Search by name, phone, or email..." 
+                                           value="{{ search_query }}">
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-2">
+                                <label class="form-label d-none d-lg-block">&nbsp;</label>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-search me-1"></i>Search
+                                    </button>
+                                    <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times me-1"></i>Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row g-3 g-md-4 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-primary bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-users text-primary fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-primary">{{ page_obj.paginator.count }}</h3>
+                                    <small class="text-muted">Total Customers</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-success bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-success">
+                                        {% with approved_count=0 %}
+                                            {% for customer in page_obj %}
+                                                {% if customer.is_credit_approved %}
+                                                    {% with approved_count=approved_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ approved_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">Credit Approved</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-warning bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-warning">
+                                        {% with debt_count=0 %}
+                                            {% for customer in page_obj %}
+                                                {% if customer.total_debt and customer.total_debt > 0 %}
+                                                    {% with debt_count=debt_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ debt_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">With Debt</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card shadow-sm text-center">
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="p-2 bg-info bg-opacity-10 rounded-circle me-3">
+                                    <i class="fas fa-credit-card text-info fa-2x"></i>
+                                </div>
+                                <div class="text-start">
+                                    <h3 class="mb-0 fw-bold text-info">
+                                        {% with active_count=0 %}
+                                            {% for customer in page_obj %}
+                                                {% if customer.is_credit_approved and customer.available_credit > 0 %}
+                                                    {% with active_count=active_count|add:1 %}{% endwith %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ active_count }}
+                                        {% endwith %}
+                                    </h3>
+                                    <small class="text-muted">Active Credit</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Table Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Customer Directory
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Mobile-friendly responsive table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="px-3 py-3">Customer</th>
+                                    <th class="px-3 py-3 d-none d-md-table-cell">Contact</th>
+                                    <th class="px-3 py-3 d-none d-lg-table-cell">Credit Limit</th>
+                                    <th class="px-3 py-3">Debt</th>
+                                    <th class="px-3 py-3 d-none d-lg-table-cell">Available</th>
+                                    <th class="px-3 py-3">Status</th>
+                                    <th class="px-3 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in page_obj %}
+                                <tr class="customer-row" data-customer-id="{{ customer.id }}">
+                                    <td class="px-3 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <strong class="d-block">{{ customer.name }}</strong>
+                                                {% if customer.address %}
+                                                    <small class="text-muted d-block">{{ customer.address|truncatechars:30 }}</small>
+                                                {% endif %}
+                                                <!-- Mobile-only: Show contact info -->
+                                                <div class="d-md-none mt-1">
+                                                    {% if customer.phone %}
+                                                        <small class="text-muted d-block">
+                                                            <i class="fas fa-phone me-1"></i>{{ customer.phone }}
+                                                        </small>
+                                                    {% endif %}
+                                                    {% if customer.email %}
+                                                        <small class="text-muted d-block">
+                                                            <i class="fas fa-envelope me-1"></i>{{ customer.email|truncatechars:20 }}
+                                                        </small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-md-table-cell">
+                                        <div>
+                                            {% if customer.phone %}
+                                                <div class="mb-1">
+                                                    <i class="fas fa-phone text-success me-2"></i>
+                                                    <span>{{ customer.phone }}</span>
+                                                </div>
+                                            {% endif %}
+                                            {% if customer.email %}
+                                                <div>
+                                                    <i class="fas fa-envelope text-info me-2"></i>
+                                                    <span>{{ customer.email|truncatechars:25 }}</span>
+                                                </div>
+                                            {% endif %}
+                                            {% if not customer.phone and not customer.email %}
+                                                <small class="text-muted">No contact info</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-lg-table-cell">
+                                        {% if customer.credit_limit > 0 %}
+                                            <strong class="text-success">TSh {{ customer.credit_limit|floatformat:0 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">No Limit</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        {% if customer.total_debt > 0 %}
+                                            <strong class="text-danger">TSh {{ customer.total_debt|floatformat:0 }}</strong>
+                                        {% else %}
+                                            <span class="text-success">TSh 0</span>
+                                        {% endif %}
+                                        <!-- Mobile-only: Show credit limit and available credit -->
+                                        <div class="d-lg-none mt-1">
+                                            <small class="text-muted d-block">
+                                                Limit: {% if customer.credit_limit > 0 %}TSh {{ customer.credit_limit|floatformat:0 }}{% else %}None{% endif %}
+                                            </small>
+                                            {% if customer.is_credit_approved %}
+                                                <small class="text-success d-block">
+                                                    Available: TSh {{ customer.available_credit|floatformat:0 }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3 d-none d-lg-table-cell">
+                                        {% if customer.is_credit_approved %}
+                                            {% if customer.available_credit > 0 %}
+                                                <strong class="text-success">TSh {{ customer.available_credit|floatformat:0 }}</strong>
+                                            {% else %}
+                                                <span class="text-warning">TSh 0</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        {% if customer.is_credit_approved %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Approved
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-times me-1"></i>Not Approved
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <div class="btn-group-vertical btn-group-sm" role="group">
+                                            <a href="{% url 'customer_profile' customer.pk %}" 
+                                               class="btn btn-info btn-sm mb-1" title="View Profile">
+                                                <i class="fas fa-eye me-1"></i>
+                                                <span class="d-none d-lg-inline">Profile</span>
+                                            </a>
+                                            <a href="{% url 'customer_edit' customer.pk %}" 
+                                               class="btn btn-warning btn-sm mb-1" title="Edit Customer">
+                                                <i class="fas fa-edit me-1"></i>
+                                                <span class="d-none d-lg-inline">Edit</span>
+                                            </a>
+                                            {% if customer.is_credit_approved and customer.available_credit > 0 %}
+                                                <a href="{% url 'credit_sale_add' %}?customer={{ customer.pk }}" 
+                                                   class="btn btn-success btn-sm" title="Create Credit Sale">
+                                                    <i class="fas fa-plus me-1"></i>
+                                                    <span class="d-none d-lg-inline">Sale</span>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="fas fa-users fa-3x mb-3"></i>
+                                            <h5>No customers found</h5>
+                                            <p>No customers match your current filters.</p>
+                                            <a href="{% url 'customer_add' %}" class="btn btn-primary">
+                                                <i class="fas fa-user-plus me-1"></i> Add First Customer
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="card shadow-sm mt-4">
+                <div class="card-body py-3">
+                    <nav aria-label="Customer pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if credit_filter %}&credit_filter={{ credit_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="First Page">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if credit_filter %}&credit_filter={{ credit_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Previous Page">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link bg-primary border-primary">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if credit_filter %}&credit_filter={{ credit_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Next Page">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if credit_filter %}&credit_filter={{ credit_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Last Page">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    document.getElementById('filter-form').submit();
+                }
+            }, 500);
+        });
+    }
+    
+    // Add row hover effects for better mobile interaction
+    const rows = document.querySelectorAll('.customer-row');
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && !e.target.closest('a') && !e.target.closest('button')) {
+                // On mobile, clicking a row could expand/collapse details
+                if (window.innerWidth <= 768) {
+                    this.classList.toggle('expanded');
+                }
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.avatar-sm {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.customer-row {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.customer-row:hover {
+    background-color: rgba(0,123,255,0.05) !important;
+    transform: translateX(2px);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.4em 0.6em;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.form-select, .form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+    }
+    
+    .table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .btn-group-vertical .btn {
+        margin-bottom: 0.25rem;
+    }
+    
+    .customer-row.expanded {
+        background-color: rgba(0,123,255,0.1) !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .card-header h5 {
+        font-size: 1rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+}
+
+/* Animation for statistics cards */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: slideInUp 0.5s ease;
+}
+
+/* Custom scrollbar */
+.table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: #007bff #f1f1f1;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 10px;
+}
+
+.page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+    color: #007bff;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

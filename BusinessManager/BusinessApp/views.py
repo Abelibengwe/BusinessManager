@@ -16,7 +16,8 @@ from .models import (
     Product, Sale, SaleItem, Expense, Project, 
     StockMovement, Notification, Category, 
     ExpenseCategory, Customer, Supplier,
-    ElectricalDevice, ElectronicsDevice
+    ElectricalDevice, ElectronicsDevice,
+    Debt, DebtPayment
 )
 
 # Create your views here.
@@ -288,7 +289,7 @@ def dashboard(request):
             Notification.objects.create(
                 user=request.user,
                 title=f"High Expense Alert: {expense.title}",
-                message=f"Large expense recorded: {expense.title} - ${expense.amount} on {expense.expense_date}",
+                message=f"Large expense recorded: {expense.title} - TSh {expense.amount} on {expense.expense_date}",
                 notification_type='warning'
             )
     
@@ -1291,6 +1292,80 @@ def sales_chart_api(request):
         }, status=200)  # Return 200 to avoid triggering error handlers
 
 @login_required
+def services_chart_api(request):
+    try:
+        today = timezone.now().date()
+        days = int(request.GET.get('days', 30))
+        start_date = today - timedelta(days=days)
+        
+        services_data = []
+        total_projects = 0
+        total_electrical = 0
+        total_electronics = 0
+        
+        for i in range(days):
+            date = start_date + timedelta(days=i)
+            try:
+                # Count projects created on this date
+                daily_projects = Project.objects.filter(created_at__date=date).count()
+                
+                # Count electrical devices added/maintained on this date
+                daily_electrical = ElectricalDevice.objects.filter(created_at__date=date).count()
+                
+                # Count electronics devices added/maintained on this date
+                daily_electronics = ElectronicsDevice.objects.filter(created_at__date=date).count()
+                
+                services_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'projects': daily_projects,
+                    'electrical': daily_electrical,
+                    'electronics': daily_electronics,
+                    'total': daily_projects + daily_electrical + daily_electronics
+                })
+                
+                total_projects += daily_projects
+                total_electrical += daily_electrical
+                total_electronics += daily_electronics
+                
+            except Exception as e:
+                # If there's an error with a specific date, add zero values
+                services_data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'projects': 0,
+                    'electrical': 0,
+                    'electronics': 0,
+                    'total': 0
+                })
+        
+        total_services = total_projects + total_electrical + total_electronics
+        avg_daily_services = total_services / days if days > 0 else 0
+        
+        return JsonResponse({
+            'data': services_data,
+            'summary': {
+                'total_services': total_services,
+                'total_projects': total_projects,
+                'total_electrical': total_electrical,
+                'total_electronics': total_electronics,
+                'avg_daily_services': avg_daily_services,
+                'period_days': days
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e),
+            'data': [],
+            'summary': {
+                'total_services': 0,
+                'total_projects': 0,
+                'total_electrical': 0,
+                'total_electronics': 0,
+                'avg_daily_services': 0,
+                'period_days': days
+            }
+        }, status=200)
+
+@login_required
 def product_search_api(request):
     query = request.GET.get('q', '')
     products = Product.objects.filter(
@@ -1750,3 +1825,413 @@ def settings_view(request):
         'user': request.user,
     }
     return render(request, 'settings/settings.html', context)
+
+
+# Debt Management Views
+
+@login_required
+def debt_list(request):
+    """List all debts with filtering options"""
+    debts = Debt.objects.select_related('customer', 'sale').all()
+    
+    # Filter by status
+    status = request.GET.get('status')
+    if status:
+        debts = debts.filter(status=status)
+    
+    # Filter by customer
+    customer_id = request.GET.get('customer')
+    if customer_id:
+        debts = debts.filter(customer_id=customer_id)
+    
+    # Search by customer name
+    search = request.GET.get('search')
+    if search:
+        debts = debts.filter(
+            Q(customer__name__icontains=search) |
+            Q(customer__phone__icontains=search)
+        )
+    
+    # Update overdue debts
+    for debt in debts:
+        debt.update_status()
+    
+    # Paginate results
+    paginator = Paginator(debts, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'title': 'Debt Management',
+        'page_obj': page_obj,
+        'customers': Customer.objects.filter(is_credit_approved=True),
+        'debt_statuses': Debt.DEBT_STATUS_CHOICES,
+        'current_status': status,
+        'current_customer': customer_id,
+        'search_query': search,
+    }
+    return render(request, 'debts/list.html', context)
+
+
+@login_required
+def customer_list(request):
+    """List all customers with credit information"""
+    customers = Customer.objects.all()
+    
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        customers = customers.filter(
+            Q(name__icontains=search) |
+            Q(phone__icontains=search) |
+            Q(email__icontains=search)
+        )
+    
+    # Filter by credit status
+    credit_filter = request.GET.get('credit_filter')
+    if credit_filter == 'approved':
+        customers = customers.filter(is_credit_approved=True)
+    elif credit_filter == 'not_approved':
+        customers = customers.filter(is_credit_approved=False)
+    
+    # Add debt information to customers
+    for customer in customers:
+        customer.total_debt = customer.current_debt
+    
+    # Paginate results
+    paginator = Paginator(customers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'title': 'Customer Management',
+        'page_obj': page_obj,
+        'search_query': search,
+        'credit_filter': credit_filter,
+    }
+    return render(request, 'customers/list.html', context)
+
+
+@login_required
+def customer_add(request):
+    """Add a new customer"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        phone = request.POST.get('phone')
+        email = request.POST.get('email')
+        address = request.POST.get('address')
+        credit_limit = request.POST.get('credit_limit', 0)
+        is_credit_approved = request.POST.get('is_credit_approved') == 'on'
+        
+        if not name:
+            messages.error(request, 'Customer name is required.')
+        else:
+            try:
+                customer = Customer.objects.create(
+                    name=name,
+                    phone=phone,
+                    email=email,
+                    address=address,
+                    credit_limit=Decimal(credit_limit) if credit_limit else Decimal('0'),
+                    is_credit_approved=is_credit_approved
+                )
+                messages.success(request, f'Customer {customer.name} added successfully!')
+                return redirect('customer_list')
+            except Exception as e:
+                messages.error(request, f'Error adding customer: {str(e)}')
+    
+    context = {
+        'title': 'Add Customer',
+    }
+    return render(request, 'customers/add.html', context)
+
+
+@login_required
+def customer_edit(request, pk):
+    """Edit an existing customer"""
+    customer = get_object_or_404(Customer, pk=pk)
+    
+    if request.method == 'POST':
+        customer.name = request.POST.get('name', customer.name)
+        customer.phone = request.POST.get('phone', customer.phone)
+        customer.email = request.POST.get('email', customer.email)
+        customer.address = request.POST.get('address', customer.address)
+        
+        credit_limit = request.POST.get('credit_limit')
+        if credit_limit:
+            customer.credit_limit = Decimal(credit_limit)
+        
+        customer.is_credit_approved = request.POST.get('is_credit_approved') == 'on'
+        
+        try:
+            customer.save()
+            messages.success(request, f'Customer {customer.name} updated successfully!')
+            return redirect('customer_profile', pk=customer.pk)
+        except Exception as e:
+            messages.error(request, f'Error updating customer: {str(e)}')
+    
+    context = {
+        'title': 'Edit Customer',
+        'customer': customer,
+    }
+    return render(request, 'customers/edit.html', context)
+
+
+@login_required
+def customer_profile(request, pk):
+    """View customer profile with debt history"""
+    customer = get_object_or_404(Customer, pk=pk)
+    
+    # Get customer's debts
+    debts = Debt.objects.filter(customer=customer).select_related('sale').order_by('-created_at')
+    
+    # Get recent payments
+    recent_payments = DebtPayment.objects.filter(
+        debt__customer=customer
+    ).select_related('debt').order_by('-payment_date')[:10]
+    
+    # Calculate statistics
+    total_debt = customer.current_debt
+    total_paid = DebtPayment.objects.filter(debt__customer=customer).aggregate(
+        total=Sum('amount_paid')
+    )['total'] or Decimal('0')
+    
+    overdue_debts = debts.filter(status='overdue')
+    
+    context = {
+        'title': f'Customer Profile - {customer.name}',
+        'customer': customer,
+        'debts': debts,
+        'recent_payments': recent_payments,
+        'total_debt': total_debt,
+        'total_paid': total_paid,
+        'overdue_debts': overdue_debts,
+        'available_credit': customer.available_credit,
+    }
+    return render(request, 'customers/profile.html', context)
+
+
+@login_required
+def debt_payment(request, pk):
+    """Process payment for a debt"""
+    debt = get_object_or_404(Debt, pk=pk)
+    
+    if request.method == 'POST':
+        amount_paid = request.POST.get('amount_paid')
+        notes = request.POST.get('notes', '')
+        
+        if not amount_paid:
+            messages.error(request, 'Payment amount is required.')
+        else:
+            try:
+                amount_paid = Decimal(amount_paid)
+                
+                if amount_paid <= 0:
+                    messages.error(request, 'Payment amount must be greater than zero.')
+                elif amount_paid > debt.remaining_balance:
+                    messages.error(request, 'Payment amount cannot exceed remaining balance.')
+                else:
+                    # Create payment record
+                    payment = DebtPayment.objects.create(
+                        debt=debt,
+                        amount_paid=amount_paid,
+                        notes=notes,
+                        recorded_by=request.user
+                    )
+                    
+                    messages.success(request, f'Payment of TSh {amount_paid:,.2f} recorded successfully!')
+                    return redirect('customer_profile', pk=debt.customer.pk)
+                    
+            except (ValueError, TypeError):
+                messages.error(request, 'Invalid payment amount.')
+            except Exception as e:
+                messages.error(request, f'Error processing payment: {str(e)}')
+    
+    context = {
+        'title': f'Record Payment - {debt.customer.name}',
+        'debt': debt,
+    }
+    return render(request, 'debts/payment.html', context)
+
+
+@login_required
+def credit_sale_add(request):
+    """Add a new credit sale"""
+    customers = Customer.objects.filter(is_credit_approved=True)
+    products = Product.objects.filter(stock_quantity__gt=0)
+    
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer')
+        due_date = request.POST.get('due_date')
+        
+        # Check if we're creating a new customer or using existing
+        new_customer_name = request.POST.get('new_customer_name', '').strip()
+        new_customer_phone = request.POST.get('new_customer_phone', '').strip()
+        new_customer_email = request.POST.get('new_customer_email', '').strip()
+        new_customer_credit_limit = request.POST.get('new_customer_credit_limit', '0')
+        
+        customer = None
+        
+        if new_customer_name and new_customer_phone:
+            # Create new customer
+            try:
+                credit_limit = Decimal(new_customer_credit_limit) if new_customer_credit_limit else Decimal('0')
+                
+                # Check if customer with same phone already exists
+                existing_customer = Customer.objects.filter(phone=new_customer_phone).first()
+                if existing_customer:
+                    messages.error(request, f'Customer with phone {new_customer_phone} already exists.')
+                    return render(request, 'sales/credit_add.html', {
+                        'title': 'Add Credit Sale',
+                        'customers': customers,
+                        'products': products,
+                    })
+                
+                customer = Customer.objects.create(
+                    name=new_customer_name,
+                    phone=new_customer_phone,
+                    email=new_customer_email if new_customer_email else None,
+                    credit_limit=credit_limit,
+                    is_credit_approved=True if credit_limit > 0 else False
+                )
+                
+                messages.success(request, f'New customer "{customer.name}" created successfully!')
+                
+            except Exception as e:
+                messages.error(request, f'Error creating customer: {str(e)}')
+                return render(request, 'sales/credit_add.html', {
+                    'title': 'Add Credit Sale',
+                    'customers': customers,
+                    'products': products,
+                })
+        
+        elif customer_id:
+            # Use existing customer
+            customer = get_object_or_404(Customer, pk=customer_id)
+        
+        else:
+            messages.error(request, 'Please select a customer or provide new customer details.')
+            return render(request, 'sales/credit_add.html', {
+                'title': 'Add Credit Sale',
+                'customers': customers,
+                'products': products,
+            })
+        
+        # Get sale items from form
+        product_ids = request.POST.getlist('product_id')
+        quantities = request.POST.getlist('quantity')
+        
+        if not product_ids:
+            messages.error(request, 'Please add at least one product.')
+            return render(request, 'sales/credit_add.html', {
+                'title': 'Add Credit Sale',
+                'customers': customers,
+                'products': products,
+            })
+        
+        try:
+            total_amount = Decimal('0')
+            sale_items = []
+            
+            # Calculate total and validate stock
+            for i, product_id in enumerate(product_ids):
+                if not product_id:
+                    continue
+                    
+                product = get_object_or_404(Product, pk=product_id)
+                quantity = int(quantities[i])
+                
+                if quantity <= 0:
+                    messages.error(request, f'Invalid quantity for {product.name}.')
+                    raise ValueError('Invalid quantity')
+                
+                if quantity > product.stock_quantity:
+                    messages.error(request, f'Insufficient stock for {product.name}. Available: {product.stock_quantity}')
+                    raise ValueError('Insufficient stock')
+                
+                item_total = product.selling_price * quantity
+                total_amount += item_total
+                
+                sale_items.append({
+                    'product': product,
+                    'quantity': quantity,
+                    'unit_price': product.selling_price,
+                    'total_price': item_total
+                })
+            
+            # Check customer credit limit
+            if not customer.can_buy_on_credit(total_amount):
+                messages.error(request, f'Credit limit exceeded. Available credit: TSh {customer.available_credit:,.2f}')
+                raise ValueError('Credit limit exceeded')
+            
+            # Create the sale
+            sale = Sale.objects.create(
+                customer=customer,
+                total_amount=total_amount,
+                sale_type='credit',
+                created_by=request.user
+            )
+            
+            
+            # Create sale items and update stock
+            for item_data in sale_items:
+                SaleItem.objects.create(
+                    sale=sale,
+                    product=item_data['product'],
+                    quantity=item_data['quantity'],
+                    unit_price=item_data['unit_price'],
+                    total_price=item_data['total_price']
+                )
+                
+                # Update product stock
+                item_data['product'].stock_quantity -= item_data['quantity']
+                item_data['product'].save()
+            
+            # Create debt record
+            debt = Debt.objects.create(
+                customer=customer,
+                sale=sale,
+                amount=total_amount,
+                due_date=due_date if due_date else None
+            )
+            
+            messages.success(request, f'Credit sale created successfully! Debt ID: {debt.id}')
+            return redirect('sale_detail', pk=sale.pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error creating credit sale: {str(e)}')
+    
+    context = {
+        'title': 'Add Credit Sale',
+        'customers': customers,
+        'products': products,
+    }
+    return render(request, 'sales/credit_add.html', context)
+
+
+@login_required
+def customer_search_api(request):
+    """API endpoint to search customers for AJAX requests"""
+    query = request.GET.get('q', '')
+    customers = Customer.objects.filter(
+        Q(name__icontains=query) |
+        Q(phone__icontains=query)
+    )[:10]  # Limit to 10 results
+    
+    data = {
+        'customers': [
+            {
+                'id': customer.id,
+                'name': customer.name,
+                'phone': customer.phone,
+                'credit_limit': float(customer.credit_limit),
+                'current_debt': float(customer.current_debt),
+                'available_credit': float(customer.available_credit),
+                'is_credit_approved': customer.is_credit_approved,
+                'can_buy_on_credit': customer.can_buy_on_credit(Decimal('0'))
+            }
+            for customer in customers
+        ]
+    }
+    
+    return JsonResponse(data)

@@ -370,7 +370,7 @@
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
-                            <i class="fas fa-chart-line me-2"></i>Sales Overview
+                            <i class="fas fa-chart-line me-2"></i>Sales & Services Overview
                         </h5>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick="loadSalesChartData(7)">7D</button>
@@ -672,6 +672,200 @@
 
 {% block extra_js %}
 <script>
+// Global variables for chart management
+let salesChart = null;
+
+// Chart creation function
+function createSalesChart() {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) {
+        console.error('Sales chart canvas not found');
+        return;
+    }
+    
+    // Initialize with empty data
+    const config = {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Sales (TSh)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Projects',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Electrical Services',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Electronics Services',
+                    data: [],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: false
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return `Sales: TSh ${context.parsed.y.toLocaleString()}`;
+                            } else {
+                                return `${context.dataset.label}: ${context.parsed.y}`;
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value, index) {
+                            const date = new Date(this.getLabelForValue(value));
+                            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        }
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Sales (TSh)'
+                    },
+                    grid: {
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'TSh ' + value.toLocaleString();
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Services Count'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    };
+    
+    salesChart = new Chart(ctx, config);
+    console.log('Sales chart created successfully');
+    
+    // Load initial data
+    loadSalesChartData(30);
+}
+
+// Data loading function
+function loadSalesChartData(days) {
+    if (!salesChart) {
+        console.error('Chart not initialized');
+        return;
+    }
+    
+    // Update active button
+    $('.btn-group .btn').removeClass('active');
+    $(`.btn-group .btn[onclick="loadSalesChartData(${days})"]`).addClass('active');
+    
+    // Load sales data
+    Promise.all([
+        fetch(`/api/sales-chart/?days=${days}`),
+        fetch(`/api/services-chart/?days=${days}`)
+    ])
+    .then(responses => Promise.all(responses.map(r => r.json())))
+    .then(([salesData, servicesData]) => {
+        console.log('Sales data:', salesData);
+        console.log('Services data:', servicesData);
+        
+        // Update chart data
+        const labels = salesData.data.map(item => item.date);
+        
+        salesChart.data.labels = labels;
+        salesChart.data.datasets[0].data = salesData.data.map(item => item.sales);
+        salesChart.data.datasets[1].data = servicesData.data.map(item => item.projects);
+        salesChart.data.datasets[2].data = servicesData.data.map(item => item.electrical);
+        salesChart.data.datasets[3].data = servicesData.data.map(item => item.electronics);
+        
+        salesChart.update('none');
+        
+        console.log('Chart updated with new data');
+    })
+    .catch(error => {
+        console.error('Error loading chart data:', error);
+    });
+}
+
 $(document).ready(function() {
     // Debug: Check if elements exist
     console.log('Dashboard elements:', {

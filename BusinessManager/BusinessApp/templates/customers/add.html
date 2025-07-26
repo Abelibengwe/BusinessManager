@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <a href="{% url 'customer_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Customers
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Basic Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="name" class="required">Customer Name</label>
+                                            <input type="text" id="name" name="name" class="form-control" required 
+                                                   placeholder="Enter customer full name">
+                                            <div class="invalid-feedback">
+                                                Please provide a customer name.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="phone">Phone Number</label>
+                                            <input type="tel" id="phone" name="phone" class="form-control" 
+                                                   placeholder="e.g., +255123456789">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="email">Email Address</label>
+                                            <input type="email" id="email" name="email" class="form-control" 
+                                                   placeholder="customer@example.com">
+                                            <div class="invalid-feedback">
+                                                Please provide a valid email address.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="address">Address</label>
+                                            <textarea id="address" name="address" class="form-control" rows="3" 
+                                                      placeholder="Enter customer address"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Credit Information -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Credit Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input type="checkbox" id="is_credit_approved" name="is_credit_approved" 
+                                                       class="form-check-input" onchange="toggleCreditLimit()">
+                                                <label for="is_credit_approved" class="form-check-label">
+                                                    Approve for Credit Purchases
+                                                </label>
+                                            </div>
+                                            <small class="form-text text-muted">
+                                                Allow this customer to make purchases on credit
+                                            </small>
+                                        </div>
+
+                                        <div class="form-group" id="credit-limit-group" style="display: none;">
+                                            <label for="credit_limit">Credit Limit (TSh)</label>
+                                            <input type="number" id="credit_limit" name="credit_limit" class="form-control" 
+                                                   min="0" step="1000" value="0" placeholder="Enter credit limit">
+                                            <small class="form-text text-muted">
+                                                Maximum amount this customer can owe at any time
+                                            </small>
+                                        </div>
+
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-info-circle"></i> Credit Guidelines</h6>
+                                            <ul class="mb-0">
+                                                <li>Only approved customers can make credit purchases</li>
+                                                <li>Credit limit determines maximum outstanding debt</li>
+                                                <li>Customers can make payments to reduce their debt</li>
+                                                <li>Overdue debts will be automatically flagged</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="form-group d-flex justify-content-between">
+                                    <a href="{% url 'customer_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Add Customer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCreditLimit() {
+    const checkbox = document.getElementById('is_credit_approved');
+    const creditLimitGroup = document.getElementById('credit-limit-group');
+    
+    if (checkbox.checked) {
+        creditLimitGroup.style.display = 'block';
+        document.getElementById('credit_limit').required = true;
+    } else {
+        creditLimitGroup.style.display = 'none';
+        document.getElementById('credit_limit').required = false;
+        document.getElementById('credit_limit').value = '0';
+    }
+}
+
+// Bootstrap form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+
+<style>
+.required::after {
+    content: " *";
+    color: red;
+}
+
+.card {
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.info-box {
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

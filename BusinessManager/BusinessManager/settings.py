@@ -11,6 +11,27 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+# Try to import decouple, fall back to os.environ if not available
+try:
+    from decouple import config, Csv
+except ImportError:
+    # Fallback function if decouple is not installed
+    def config(key, default=None, cast=None):
+        value = os.environ.get(key, default)
+        if cast and value is not None:
+            if cast == bool:
+                return value.lower() in ('true', '1', 'yes', 'on')
+            elif cast == list:  # Handle Csv case
+                return [host.strip() for host in value.split(',') if host.strip()]
+            else:
+                return cast(value)
+        return value
+    
+    class Csv:
+        def __call__(self):
+            return list
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +41,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j2l45*zyy_5e!n50jxw0v=qkaqwyc$nz8+_$*ppk+tm)r_8b5-'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-j2l45*zyy_5e!n50jxw0v=qkaqwyc$nz8+_$*ppk+tm)r_8b5-')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.190.130.111']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.190.130.111', '*']  # * allows all hosts for development
 
 
 # Application definition
@@ -77,8 +98,12 @@ WSGI_APPLICATION = 'BusinessManager.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='businessmanager_db'),
+        'USER': config('DB_USER', default='postgres'),
+        'PASSWORD': config('DB_PASSWORD', default='a123'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
