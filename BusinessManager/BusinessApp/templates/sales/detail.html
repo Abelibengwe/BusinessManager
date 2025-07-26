@@ -15,116 +15,155 @@
         box-shadow: var(--shadow-medium);
     }
     
-    .sale-details {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .detail-card {
+    .modern-card {
         background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-light);
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         overflow: hidden;
+        margin-bottom: 1.5rem;
     }
     
-    .card-header {
-        background: var(--bg-tertiary);
+    .modern-card-header {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .modern-card-body {
         padding: 1.5rem;
-        border-bottom: 1px solid var(--border-light);
     }
     
-    .card-body {
-        padding: 2rem;
+    .detail-grid {
+        display: grid;
+        gap: 1rem;
     }
     
-    .detail-row {
+    @media (min-width: 768px) {
+        .detail-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+    }
+    
+    .detail-item {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
         padding: 0.75rem 0;
-        border-bottom: 1px solid var(--border-light);
+        border-bottom: 1px solid #f1f5f9;
     }
     
-    .detail-row:last-child {
+    .detail-item:last-child {
         border-bottom: none;
     }
     
     .detail-label {
         font-weight: 600;
-        color: var(--text-secondary);
-        min-width: 120px;
+        color: #64748b;
+        font-size: 0.875rem;
     }
     
     .detail-value {
-        color: var(--text-primary);
+        color: #1e293b;
         font-weight: 500;
+        text-align: right;
+    }
+    
+    @media (max-width: 767.98px) {
+        .detail-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .detail-value {
+            text-align: left;
+        }
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 767.98px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
     }
     
     .items-table {
         background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-light);
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .table-responsive {
+        border-radius: 1rem;
+    }
+    
+    .table > :not(caption) > * > * {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table-header {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
+        font-weight: 600;
     }
     
     .receipt-section {
         background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-light);
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         padding: 2rem;
         margin-top: 2rem;
     }
     
     .receipt-header {
         text-align: center;
-        padding-bottom: 2rem;
-        border-bottom: 2px solid var(--border-color);
-        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 1.5rem;
     }
     
     .receipt-title {
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: #6366f1;
         margin-bottom: 0.5rem;
     }
     
-    .receipt-details {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .total-section {
-        background: var(--bg-tertiary);
-        border-radius: var(--border-radius-sm);
+    .total-summary {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        border-radius: 0.75rem;
         padding: 1.5rem;
-        margin-top: 1rem;
+        margin-top: 1.5rem;
     }
     
-    .total-row {
+    .total-item {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.5rem;
+        padding: 0.5rem 0;
     }
     
-    .total-row.grand-total {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--primary-color);
-        border-top: 2px solid var(--border-color);
-        padding-top: 1rem;
+    .total-item.final {
+        border-top: 2px solid #6366f1;
         margin-top: 1rem;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
+        padding-top: 1rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #6366f1;
     }
     
     @media print {
@@ -132,175 +171,149 @@
             display: none !important;
         }
         
-        .receipt-section {
-            box-shadow: none;
-            margin: 0;
-            padding: 1rem;
-        }
-        
-        .sale-header,
-        .action-buttons {
-            display: none !important;
+        .sale-header {
+            background: #6366f1 !important;
+            -webkit-print-color-adjust: exact;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="content-wrapper">
-    <!-- Page Header -->
-    <div class="sale-header no-print">
-        <div class="d-flex justify-content-between align-items-center">
+<div class="container-fluid">
+    <!-- Sale Header -->
+    <div class="sale-header">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
             <div>
-                <h1 class="mb-2">
-                    <i class="fas fa-receipt me-3"></i>Sale #{{ sale.id }}
-                </h1>
-                <p class="mb-0 opacity-75">Sale details and receipt</p>
+                <h1 class="h3 mb-2">Sale #{{ sale.id }}</h1>
+                <p class="mb-0 opacity-90">{{ sale.date|date:"F j, Y g:i A" }}</p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'sale_list' %}" class="btn btn-light">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Sales
-                </a>
-                <button onclick="window.print()" class="btn btn-outline-light">
-                    <i class="fas fa-print me-2"></i>Print Receipt
-                </button>
+            <div class="d-flex flex-column flex-md-row gap-2">
+                <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                    <i class="fas fa-check-circle me-1"></i>Completed
+                </span>
+                <span class="badge bg-primary text-white px-3 py-2 rounded-pill">
+                    Total: Tsh {{ sale.total_amount|floatformat:0|intcomma }}
+                </span>
             </div>
         </div>
     </div>
-    
+
     <!-- Action Buttons -->
     <div class="action-buttons no-print">
-        <button onclick="window.print()" class="btn btn-primary">
+        <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Sales
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
             <i class="fas fa-print me-2"></i>Print Receipt
         </button>
-        <button onclick="emailReceipt()" class="btn btn-success">
-            <i class="fas fa-envelope me-2"></i>Email Receipt
-        </button>
-        <button onclick="downloadPDF()" class="btn btn-info">
+        <a href="{% url 'sale_add' %}" class="btn btn-info">
+            <i class="fas fa-plus me-2"></i>New Sale
+        </a>
+        <button class="btn btn-success" onclick="downloadReceipt()">
             <i class="fas fa-download me-2"></i>Download PDF
         </button>
-        <button onclick="duplicateSale()" class="btn btn-warning">
-            <i class="fas fa-copy me-2"></i>Duplicate Sale
-        </button>
     </div>
-    
-    <!-- Sale Details -->
-    <div class="sale-details no-print">
-        <!-- Sale Information -->
-        <div class="detail-card">
-            <div class="card-header">
+
+    <!-- Sale Information Grid -->
+    <div class="detail-grid">
+        <!-- Sale Details Card -->
+        <div class="modern-card">
+            <div class="modern-card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Sale Information
+                    <i class="fas fa-receipt me-2 text-primary"></i>Sale Information
                 </h5>
             </div>
-            <div class="card-body">
-                <div class="detail-row">
-                    <span class="detail-label">Sale ID:</span>
+            <div class="modern-card-body">
+                <div class="detail-item">
+                    <span class="detail-label">Sale ID</span>
                     <span class="detail-value">#{{ sale.id }}</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Date:</span>
-                    <span class="detail-value">{{ sale.sale_date|date:"F d, Y g:i A" }}</span>
+                <div class="detail-item">
+                    <span class="detail-label">Date & Time</span>
+                    <span class="detail-value">{{ sale.date|date:"M j, Y g:i A" }}</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Payment Method:</span>
+                <div class="detail-item">
+                    <span class="detail-label">Payment Method</span>
                     <span class="detail-value">
-                        <span class="badge {% if sale.payment_method == 'cash' %}bg-success{% elif sale.payment_method == 'card' %}bg-primary{% elif sale.payment_method == 'bank_transfer' %}bg-info{% else %}bg-warning{% endif %}">
-                            {{ sale.get_payment_method_display }}
+                        <span class="badge bg-info text-white">
+                            {{ sale.payment_method|default:"Cash" }}
                         </span>
                     </span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Created By:</span>
-                    <span class="detail-value">{{ sale.created_by.get_full_name|default:sale.created_by.username }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Status:</span>
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
                     <span class="detail-value">
-                        <span class="badge bg-success">Completed</span>
+                        <span class="badge bg-success text-white">
+                            <i class="fas fa-check me-1"></i>Completed
+                        </span>
                     </span>
                 </div>
             </div>
         </div>
-        
-        <!-- Customer Information -->
-        <div class="detail-card">
-            <div class="card-header">
+
+        <!-- Customer Information Card -->
+        <div class="modern-card">
+            <div class="modern-card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-user me-2"></i>Customer Information
+                    <i class="fas fa-user me-2 text-primary"></i>Customer Information
                 </h5>
             </div>
-            <div class="card-body">
-                {% if sale.customer %}
-                    <div class="detail-row">
-                        <span class="detail-label">Name:</span>
-                        <span class="detail-value">{{ sale.customer.name }}</span>
-                    </div>
-                    {% if sale.customer.email %}
-                    <div class="detail-row">
-                        <span class="detail-label">Email:</span>
-                        <span class="detail-value">{{ sale.customer.email }}</span>
-                    </div>
-                    {% endif %}
-                    {% if sale.customer.phone %}
-                    <div class="detail-row">
-                        <span class="detail-label">Phone:</span>
-                        <span class="detail-value">{{ sale.customer.phone }}</span>
-                    </div>
-                    {% endif %}
-                    {% if sale.customer.address %}
-                    <div class="detail-row">
-                        <span class="detail-label">Address:</span>
-                        <span class="detail-value">{{ sale.customer.address }}</span>
-                    </div>
-                    {% endif %}
-                {% else %}
-                    <div class="text-center text-muted py-3">
-                        <i class="fas fa-user-slash fa-2x mb-2"></i>
-                        <p class="mb-0">Walk-in Customer</p>
-                        <small>No customer information provided</small>
-                    </div>
-                {% endif %}
+            <div class="modern-card-body">
+                <div class="detail-item">
+                    <span class="detail-label">Name</span>
+                    <span class="detail-value">{{ sale.customer_name|default:"Walk-in Customer" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Phone</span>
+                    <span class="detail-value">{{ sale.customer_phone|default:"N/A" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">{{ sale.customer_email|default:"N/A" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Address</span>
+                    <span class="detail-value">{{ sale.customer_address|default:"N/A" }}</span>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Sale Items -->
-    <div class="items-table no-print">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-shopping-cart me-2"></i>Items Sold
-            </h5>
-        </div>
+
+    <!-- Items Table -->
+    <div class="items-table">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-borderless mb-0">
+                <thead class="table-header">
                     <tr>
-                        <th class="px-4 py-3">Product</th>
-                        <th class="px-4 py-3 text-center">Quantity</th>
-                        <th class="px-4 py-3 text-end">Unit Price</th>
-                        <th class="px-4 py-3 text-end">Total</th>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in sale_items %}
+                    {% for item in sale.items.all %}
                     <tr>
-                        <td class="px-4 py-3">
-                            <div>
-                                <strong>{{ item.product.name }}</strong>
-                                {% if item.product.description %}
-                                    <small class="text-muted d-block">{{ item.product.description|truncatechars:50 }}</small>
-                                {% endif %}
-                            </div>
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="fw-medium">{{ item.product_name }}</div>
+                            {% if item.product_description %}
+                            <small class="text-muted">{{ item.product_description }}</small>
+                            {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="badge bg-primary">{{ item.quantity }}</span>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark">{{ item.quantity }}</span>
                         </td>
-                        <td class="px-4 py-3 text-end">
-                            Tsh {{ item.unit_price|floatformat:0|intcomma }}
-                        </td>
-                        <td class="px-4 py-3 text-end">
-                            <strong>Tsh {{ item.total_price|floatformat:0|intcomma }}</strong>
+                        <td class="text-end">Tsh {{ item.unit_price|floatformat:0|intcomma }}</td>
+                        <td class="text-end fw-medium">Tsh {{ item.total_price|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                            No items found for this sale
                         </td>
                     </tr>
                     {% endfor %}
@@ -308,158 +321,139 @@
             </table>
         </div>
         
-        <div class="total-section">
-            <div class="total-row">
-                <span>Subtotal:</span>
-                <strong>Tsh {{ sale.total_amount|floatformat:0|intcomma }}</strong>
+        <!-- Total Summary -->
+        <div class="total-summary">
+            <div class="total-item">
+                <span>Subtotal</span>
+                <span>Tsh {{ sale.subtotal|floatformat:0|intcomma }}</span>
             </div>
-            {% if sale.discount > 0 %}
-            <div class="total-row">
-                <span>Discount:</span>
-                <strong class="text-danger">-Tsh {{ sale.discount|floatformat:0|intcomma }}</strong>
-            </div>
-            {% endif %}
-            {% if sale.tax > 0 %}
-            <div class="total-row">
-                <span>Tax:</span>
-                <strong>Tsh {{ sale.tax|floatformat:0|intcomma }}</strong>
+            {% if sale.discount_amount %}
+            <div class="total-item text-success">
+                <span>Discount</span>
+                <span>-Tsh {{ sale.discount_amount|floatformat:0|intcomma }}</span>
             </div>
             {% endif %}
-            <div class="total-row grand-total">
-                <span>Total Amount:</span>
-                <strong>Tsh {{ sale.net_amount|floatformat:0|intcomma }}</strong>
+            {% if sale.tax_amount %}
+            <div class="total-item">
+                <span>Tax</span>
+                <span>Tsh {{ sale.tax_amount|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+            <div class="total-item final">
+                <span>Total Amount</span>
+                <span>Tsh {{ sale.total_amount|floatformat:0|intcomma }}</span>
             </div>
         </div>
     </div>
-    
     <!-- Receipt Section (Print-friendly) -->
     <div class="receipt-section">
         <div class="receipt-header">
-            <div class="receipt-title">BK-Pro Business Manager</div>
+            <div class="receipt-title">Empire Dynamics</div>
             <div class="text-muted">Sales Receipt</div>
             <div class="small text-muted mt-2">Receipt #{{ sale.id }}</div>
         </div>
         
-        <div class="receipt-details">
+        <div class="detail-grid">
             <div>
-                <h6 class="mb-3">Sale Information</h6>
-                <p class="mb-1"><strong>Date:</strong> {{ sale.sale_date|date:"F d, Y g:i A" }}</p>
-                <p class="mb-1"><strong>Payment:</strong> {{ sale.get_payment_method_display }}</p>
-                <p class="mb-1"><strong>Served by:</strong> {{ sale.created_by.get_full_name|default:sale.created_by.username }}</p>
+                <h6 class="mb-3 text-primary">Sale Information</h6>
+                <div class="detail-item">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">{{ sale.date|date:"M j, Y g:i A" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Payment</span>
+                    <span class="detail-value">{{ sale.payment_method|default:"Cash" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Served by</span>
+                    <span class="detail-value">{{ sale.created_by.get_full_name|default:sale.created_by.username }}</span>
+                </div>
             </div>
             
             <div>
-                <h6 class="mb-3">{% if sale.customer %}Customer Information{% else %}Customer{% endif %}</h6>
-                {% if sale.customer %}
-                    <p class="mb-1"><strong>Name:</strong> {{ sale.customer.name }}</p>
-                    {% if sale.customer.phone %}
-                        <p class="mb-1"><strong>Phone:</strong> {{ sale.customer.phone }}</p>
-                    {% endif %}
-                    {% if sale.customer.email %}
-                        <p class="mb-1"><strong>Email:</strong> {{ sale.customer.email }}</p>
-                    {% endif %}
-                {% else %}
-                    <p class="mb-1">Walk-in Customer</p>
-                {% endif %}
+                <h6 class="mb-3 text-primary">Customer Information</h6>
+                <div class="detail-item">
+                    <span class="detail-label">Name</span>
+                    <span class="detail-value">{{ sale.customer_name|default:"Walk-in Customer" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Phone</span>
+                    <span class="detail-value">{{ sale.customer_phone|default:"N/A" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">{{ sale.customer_email|default:"N/A" }}</span>
+                </div>
             </div>
         </div>
         
         <!-- Receipt Items Table -->
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th class="text-center">Qty</th>
-                    <th class="text-end">Price</th>
-                    <th class="text-end">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in sale_items %}
-                <tr>
-                    <td>{{ item.product.name }}</td>
-                    <td class="text-center">{{ item.quantity }}</td>
-                    <td class="text-end">Tsh {{ item.unit_price|floatformat:0|intcomma }}</td>
-                    <td class="text-end">Tsh {{ item.total_price|floatformat:0|intcomma }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        
-        <!-- Receipt Totals -->
-        <div class="row">
-            <div class="col-md-6 offset-md-6">
-                <table class="table table-sm">
-                    <tr>
-                        <td>Subtotal:</td>
-                        <td class="text-end">Tsh {{ sale.total_amount|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% if sale.discount > 0 %}
-                    <tr>
-                        <td>Discount:</td>
-                        <td class="text-end text-danger">-Tsh {{ sale.discount|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if sale.tax > 0 %}
-                    <tr>
-                        <td>Tax:</td>
-                        <td class="text-end">Tsh {{ sale.tax|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr class="table-dark">
-                        <td><strong>Total:</strong></td>
-                        <td class="text-end"><strong>Tsh {{ sale.net_amount|floatformat:0|intcomma }}</strong></td>
-                    </tr>
+        <div class="mt-4">
+            <h6 class="mb-3 text-primary">Items Purchased</h6>
+            <div class="table-responsive">
+                <table class="table table-borderless">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sale.items.all %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end">Tsh {{ item.unit_price|floatformat:0|intcomma }}</td>
+                            <td class="text-end">Tsh {{ item.total_price|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
         
-        {% if sale.notes %}
-        <div class="mt-4">
-            <h6>Notes:</h6>
-            <p class="text-muted">{{ sale.notes }}</p>
+        <!-- Receipt Total -->
+        <div class="total-summary">
+            <div class="total-item">
+                <span>Subtotal</span>
+                <span>Tsh {{ sale.subtotal|floatformat:0|intcomma }}</span>
+            </div>
+            {% if sale.discount_amount %}
+            <div class="total-item text-success">
+                <span>Discount</span>
+                <span>-Tsh {{ sale.discount_amount|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+            {% if sale.tax_amount %}
+            <div class="total-item">
+                <span>Tax</span>
+                <span>Tsh {{ sale.tax_amount|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+            <div class="total-item final">
+                <span>Total Amount</span>
+                <span>Tsh {{ sale.total_amount|floatformat:0|intcomma }}</span>
+            </div>
         </div>
-        {% endif %}
         
         <div class="text-center mt-4 pt-4 border-top">
-            <p class="text-muted small mb-0">Thank you for your business!</p>
-            <p class="text-muted small">Visit us again soon.</p>
+            <p class="text-muted small mb-1">Thank you for your business!</p>
+            <p class="text-muted small mb-0">Empire Dynamics - Your trusted partner</p>
         </div>
     </div>
 </div>
 
 <script>
+function downloadReceipt() {
+    // Add PDF download functionality here
+    alert('PDF download functionality to be implemented');
+}
+
 function emailReceipt() {
-    if (confirm('Send receipt via email to customer?')) {
-        fetch(`/api/sales/{{ sale.id }}/email-receipt/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Receipt sent successfully!');
-            } else {
-                alert('Error sending receipt: ' + data.error);
-            }
-        })
-        .catch(error => {
-            alert('Error sending receipt');
-        });
-    }
-}
-
-function downloadPDF() {
-    window.open(`/sales/{{ sale.id }}/pdf/`, '_blank');
-}
-
-function duplicateSale() {
-    if (confirm('Create a new sale with the same items?')) {
-        window.location.href = `{% url 'sale_add' %}?duplicate={{ sale.id }}`;
-    }
+    // Add email functionality here
+    alert('Email receipt functionality to be implemented');
 }
 </script>
 {% endblock %}

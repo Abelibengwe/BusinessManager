@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Electronics Maintenance - BK-Pro Business Manager{% endblock %}
+{% block title %}Electronics Maintenance - Empire Dynamics{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -156,14 +156,25 @@
     <div class="container-fluid">
         <!-- Header Section -->
         <div class="electronics-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
+            <!-- Title Section -->
+            <div class="d-flex justify-content-between align-items-start flex-wrap">
+                <div class="mb-3 mb-md-0">
                     <h1 class="mb-2">
                         <i class="fas fa-microchip me-3"></i>Electronics Maintenance
                     </h1>
                     <p class="mb-0 opacity-75">Monitor and maintain electronic devices</p>
                 </div>
-                <a href="{% url 'electronics_add' %}" class="btn btn-light btn-lg">
+                <!-- Desktop Button -->
+                <div class="d-none d-md-block">
+                    <a href="{% url 'electronics_add' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Add Device
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Mobile Button - Below Title -->
+            <div class="d-block d-md-none mt-3">
+                <a href="{% url 'electronics_add' %}" class="btn btn-light btn-lg w-100">
                     <i class="fas fa-plus me-2"></i>Add Device
                 </a>
             </div>

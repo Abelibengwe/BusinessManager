@@ -2,21 +2,35 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Dashboard - BK-Pro Business Manager{% endblock %}
+{% block title %}Dashboard - Empire Dynamics{% endblock %}
 
 {% block content %}
 <div id="dashboard-app" class="dashboard-container">
     <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 text-gradient">Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
-            <p class="text-muted">Here's what's happening with your business today.</p>
+    <div class="mb-4">
+        <!-- Title Section -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="mb-3 mb-md-0">
+                <h1 class="h2 text-gradient">Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
+                <p class="text-muted">Here's what's happening with your business today.</p>
+            </div>
+            <!-- Desktop Buttons -->
+            <div class="d-none d-md-flex gap-2">
+                <button class="btn btn-modern btn-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Report
+                </button>
+                <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary">
+                    <i class="fas fa-plus"></i> New Sale
+                </a>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-modern btn-secondary" onclick="window.print()">
+        
+        <!-- Mobile Buttons - Below Title -->
+        <div class="d-flex d-md-none gap-2 mt-3">
+            <button class="btn btn-modern btn-secondary flex-fill" onclick="window.print()">
                 <i class="fas fa-print"></i> Print Report
             </button>
-            <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary">
+            <a href="{% url 'sale_add' %}" class="btn btn-modern btn-primary flex-fill">
                 <i class="fas fa-plus"></i> New Sale
             </a>
         </div>

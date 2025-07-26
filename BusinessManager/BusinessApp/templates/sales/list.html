@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Sales - BK-Pro Business Manager{% endblock %}
+{% block title %}Sales - Empire Dynamics{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -65,21 +65,39 @@
     
     .sales-actions {
         display: flex;
-        justify-content: between;
-        align-items: center;
-        margin-bottom: 1.5rem;
+        flex-direction: column;
         gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .sales-actions {
+            flex-direction: row;
+            justify-content: between;
+            align-items: center;
+        }
     }
     
     .search-box {
-        max-width: 300px;
         flex: 1;
+        min-width: 250px;
     }
     
     .action-buttons {
         display: flex;
         gap: 0.5rem;
         flex-shrink: 0;
+    }
+    
+    @media (max-width: 767.98px) {
+        .action-buttons {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .search-box {
+            min-width: 100%;
+        }
     }
 </style>
 {% endblock %}
@@ -88,14 +106,25 @@
 <div class="content-wrapper">
     <!-- Page Header -->
     <div class="sales-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
+        <!-- Title Section -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="mb-3 mb-md-0">
                 <h1 class="mb-2">
                     <i class="fas fa-shopping-cart me-3"></i>Sales Management
                 </h1>
                 <p class="mb-0 opacity-75">Track and manage all your sales transactions</p>
             </div>
-            <a href="{% url 'sale_add' %}" class="btn btn-light btn-lg">
+            <!-- Desktop Button -->
+            <div class="d-none d-md-block">
+                <a href="{% url 'sale_add' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>New Sale
+                </a>
+            </div>
+        </div>
+        
+        <!-- Mobile Button - Below Title -->
+        <div class="d-block d-md-none mt-3">
+            <a href="{% url 'sale_add' %}" class="btn btn-light btn-lg w-100">
                 <i class="fas fa-plus me-2"></i>New Sale
             </a>
         </div>

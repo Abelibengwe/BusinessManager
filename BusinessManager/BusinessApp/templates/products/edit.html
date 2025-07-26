@@ -7,13 +7,24 @@
 {% block content %}
 <div class="edit-product-container">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 text-gradient">Edit Product</h1>
-            <p class="text-muted">Update product information and inventory details</p>
+    <div class="mb-4">
+        <!-- Title Section -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="mb-3 mb-md-0">
+                <h1 class="h2 text-gradient">Edit Product</h1>
+                <p class="text-muted">Update product information and inventory details</p>
+            </div>
+            <!-- Desktop Button -->
+            <div class="d-none d-md-flex gap-2">
+                <a href="{% url 'product_list' %}" class="btn btn-modern btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Products
+                </a>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'product_list' %}" class="btn btn-modern btn-secondary">
+        
+        <!-- Mobile Button - Below Title -->
+        <div class="d-block d-md-none">
+            <a href="{% url 'product_list' %}" class="btn btn-modern btn-secondary w-100">
                 <i class="fas fa-arrow-left"></i> Back to Products
             </a>
         </div>
@@ -110,7 +121,7 @@
                             </div>
                         </div>
                         
-                        <div class="mt-4 d-flex gap-2">
+                        <div class="mt-4 d-flex flex-column flex-md-row gap-2">
                             <button type="submit" class="btn btn-modern btn-primary">
                                 <i class="fas fa-save"></i> Update Product
                             </button>

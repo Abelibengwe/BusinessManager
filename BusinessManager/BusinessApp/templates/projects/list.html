@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Projects - BK-Pro Business Manager{% endblock %}
+{% block title %}Projects - Empire Dynamics{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -133,14 +133,25 @@
 <div class="projects-container">
     <!-- Projects Header -->
     <div class="projects-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
+        <!-- Title Section -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="mb-3 mb-md-0">
                 <h1 class="h2 mb-2">
                     <i class="fas fa-project-diagram me-3"></i>Project Management
                 </h1>
                 <p class="mb-0 opacity-75">Manage and track your business projects</p>
             </div>
-            <a href="{% url 'project_add' %}" class="btn btn-light btn-lg">
+            <!-- Desktop Button -->
+            <div class="d-none d-md-block">
+                <a href="{% url 'project_add' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>New Project
+                </a>
+            </div>
+        </div>
+        
+        <!-- Mobile Button - Below Title -->
+        <div class="d-block d-md-none mt-3">
+            <a href="{% url 'project_add' %}" class="btn btn-light btn-lg w-100">
                 <i class="fas fa-plus me-2"></i>New Project
             </a>
         </div>

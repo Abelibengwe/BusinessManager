@@ -116,14 +116,25 @@
 <div class="content-wrapper">
     <!-- Page Header -->
     <div class="sale-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
+        <!-- Title Section -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="mb-3 mb-md-0">
                 <h1 class="mb-2">
                     <i class="fas fa-plus-circle me-3"></i>New Sale
                 </h1>
                 <p class="mb-0 opacity-75">Create a new sales transaction</p>
             </div>
-            <a href="{% url 'sale_list' %}" class="btn btn-light">
+            <!-- Desktop Button -->
+            <div class="d-none d-md-block">
+                <a href="{% url 'sale_list' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Sales
+                </a>
+            </div>
+        </div>
+        
+        <!-- Mobile Button - Below Title -->
+        <div class="d-block d-md-none">
+            <a href="{% url 'sale_list' %}" class="btn btn-light w-100">
                 <i class="fas fa-arrow-left me-2"></i>Back to Sales
             </a>
         </div>
@@ -275,11 +286,11 @@
         
         <!-- Form Actions -->
         <div class="form-section">
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{% url 'sale_list' %}" class="btn btn-secondary btn-lg">
+            <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+                <a href="{% url 'sale_list' %}" class="btn btn-secondary btn-lg order-md-1">
                     <i class="fas fa-times me-2"></i>Cancel
                 </a>
-                <button type="submit" class="btn btn-primary btn-lg" id="saveSaleBtn">
+                <button type="submit" class="btn btn-primary btn-lg order-md-2" id="saveSaleBtn">
                     <i class="fas fa-save me-2"></i>Save Sale
                 </button>
             </div>
