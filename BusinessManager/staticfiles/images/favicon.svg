@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+  
+  <!-- Letters "ED" for Empire Dynamics -->
+  <text x="5" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">ED</text>
+  
+  <!-- Small chart icon -->
+  <rect x="22" y="8" width="2" height="8" fill="#fbbf24" rx="1"/>
+  <rect x="25" y="12" width="2" height="4" fill="#fbbf24" rx="1"/>
+  <rect x="28" y="10" width="2" height="6" fill="#fbbf24" rx="1"/>
+</svg>

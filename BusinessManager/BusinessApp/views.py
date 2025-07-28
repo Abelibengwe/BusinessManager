@@ -3,11 +3,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Sum, Count, Q, F
+from django.db.models import Sum, Count, Q, F, Avg, Max, Min, Prefetch, Case, When, Value, IntegerField
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
+from django.db import connection
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
@@ -45,65 +48,282 @@ def logout_view(request):
     return redirect('login')
 
 @login_required
+@cache_page(60 * 5)  # Cache for 5 minutes
 def dashboard(request):
-    # Get current date and time periods
-    today = timezone.now().date()
-    thirty_days_ago = today - timedelta(days=30)
-    sixty_days_ago = today - timedelta(days=60)
+    # Use cache for expensive calculations
+    cache_key = 'dashboard_stats'
+    stats = cache.get(cache_key)
     
-    # Basic statistics
-    total_products = Product.objects.filter(is_active=True).count()
-    total_sales = Sale.objects.filter(sale_date__date__gte=thirty_days_ago).count()
+    if not stats:
+        # Get current date and time periods
+        today = timezone.now().date()
+        thirty_days_ago = today - timedelta(days=30)
+        sixty_days_ago = today - timedelta(days=60)
+        
+        # Use database aggregations for better performance
+        product_stats = Product.objects.aggregate(
+            total_products=Count('id', filter=Q(is_active=True)),
+            low_stock=Count('id', filter=Q(stock_quantity__lte=F('min_stock_level'), is_active=True)),
+            total_stock_value=Sum(F('stock_quantity') * F('cost_price'), filter=Q(is_active=True))
+        )
+        
+        # Sales statistics with single query
+        sales_stats = Sale.objects.aggregate(
+            # This month
+            total_sales_count=Count('id', filter=Q(sale_date__date__gte=thirty_days_ago)),
+            total_revenue=Sum('total_amount', filter=Q(sale_date__date__gte=thirty_days_ago)),
+            total_net_revenue=Sum(F('total_amount') - F('discount') + F('tax'), 
+                                filter=Q(sale_date__date__gte=thirty_days_ago)),
+            
+            # Last month
+            last_month_revenue=Sum('total_amount', filter=Q(
+                sale_date__date__gte=sixty_days_ago, 
+                sale_date__date__lt=thirty_days_ago
+            )),
+            last_month_net=Sum(F('total_amount') - F('discount') + F('tax'), filter=Q(
+                sale_date__date__gte=sixty_days_ago, 
+                sale_date__date__lt=thirty_days_ago
+            )),
+            
+            # Today
+            today_sales=Count('id', filter=Q(sale_date__date=today)),
+            today_revenue=Sum('total_amount', filter=Q(sale_date__date=today)),
+            today_net=Sum(F('total_amount') - F('discount') + F('tax'), 
+                         filter=Q(sale_date__date=today))
+        )
+        
+        # Expense statistics
+        expense_stats = Expense.objects.aggregate(
+            total_expenses=Sum('amount', filter=Q(expense_date__gte=thirty_days_ago)),
+            last_month_expenses=Sum('amount', filter=Q(
+                expense_date__gte=sixty_days_ago,
+                expense_date__lt=thirty_days_ago
+            )),
+            today_expenses=Sum('amount', filter=Q(expense_date=today))
+        )
+        
+        # Calculate profits using aggregated data
+        total_net_revenue = sales_stats['total_net_revenue'] or 0
+        total_expenses = expense_stats['total_expenses'] or 0
+        profit = total_net_revenue - total_expenses
+        
+        last_month_net = sales_stats['last_month_net'] or 0
+        last_month_expenses = expense_stats['last_month_expenses'] or 0
+        last_month_profit = last_month_net - last_month_expenses
+        
+        today_net = sales_stats['today_net'] or 0
+        today_expenses = expense_stats['today_expenses'] or 0
+        today_profit = today_net - today_expenses
+        
+        # Calculate percentage changes
+        revenue_change = ((total_net_revenue - last_month_net) / last_month_net * 100) if last_month_net > 0 else 0
+        expense_change = ((total_expenses - last_month_expenses) / last_month_expenses * 100) if last_month_expenses > 0 else 0
+        profit_change = ((profit - last_month_profit) / abs(last_month_profit) * 100) if last_month_profit != 0 else 0
+        
+        # Get recent activities (limited to avoid performance issues)
+        recent_sales = Sale.objects.select_related('customer', 'created_by')\
+            .order_by('-created_at')[:10]
+        
+        recent_expenses = Expense.objects.select_related('category', 'created_by')\
+            .order_by('-created_at')[:10]
+        
+        # Low stock products (limited to prevent card expansion)
+        low_stock_products = Product.objects.filter(
+            stock_quantity__lte=F('min_stock_level'),
+            is_active=True
+        ).select_related('category')[:5]  # Limit to 5 items only
+        
+        # Get total count of low stock items for display
+        low_stock_count = Product.objects.filter(
+            stock_quantity__lte=F('min_stock_level'),
+            is_active=True
+        ).count()
+        
+        # Services overview statistics with better error handling
+        from .models import ElectricalDevice, ElectronicsDevice, Project
+        
+        try:
+            electrical_stats = ElectricalDevice.objects.aggregate(
+                total_electrical=Count('id'),
+                working_electrical=Count('id', filter=Q(status__in=['working', 'active'])),
+                maintenance_electrical=Count('id', filter=Q(status__in=['maintenance', 'servicing'])),
+                repair_electrical=Count('id', filter=Q(status__in=['repair', 'broken', 'damaged']))
+            )
+            
+            electronics_stats = ElectronicsDevice.objects.aggregate(
+                total_electronics=Count('id'),
+                working_electronics=Count('id', filter=Q(status__in=['working', 'active'])),  
+                maintenance_electronics=Count('id', filter=Q(status__in=['maintenance', 'servicing'])),
+                repair_electronics=Count('id', filter=Q(status__in=['repair', 'broken', 'damaged']))
+            )
+            
+            # Project statistics
+            project_stats = Project.objects.aggregate(
+                total_projects=Count('id'),
+                active_projects=Count('id', filter=Q(status__in=['active', 'in_progress']))
+            )
+            
+            # Due maintenance calculation (only if fields exist)
+            today_due_electrical = 0
+            today_due_electronics = 0
+            try:
+                today_due_electrical = ElectricalDevice.objects.filter(
+                    next_maintenance__lte=today,
+                    status__in=['working', 'active']
+                ).count()
+            except:
+                pass
+                
+            try:
+                today_due_electronics = ElectronicsDevice.objects.filter(
+                    next_maintenance__lte=today,
+                    status__in=['working', 'active']
+                ).count()
+            except:
+                pass
+                
+        except Exception as e:
+            # Fallback values if queries fail
+            electrical_stats = {'total_electrical': 0, 'working_electrical': 0, 'maintenance_electrical': 0, 'repair_electrical': 0}
+            electronics_stats = {'total_electronics': 0, 'working_electronics': 0, 'maintenance_electronics': 0, 'repair_electronics': 0}
+            project_stats = {'total_projects': 0, 'active_projects': 0}
+            today_due_electrical = 0
+            today_due_electronics = 0
+        
+        # Combine services statistics with safe defaults
+        total_services_devices = (electrical_stats.get('total_electrical', 0) or 0) + (electronics_stats.get('total_electronics', 0) or 0)
+        total_working_devices = (electrical_stats.get('working_electrical', 0) or 0) + (electronics_stats.get('working_electronics', 0) or 0)
+        total_maintenance_devices = (electrical_stats.get('maintenance_electrical', 0) or 0) + (electronics_stats.get('maintenance_electronics', 0) or 0)
+        total_critical_devices = (electrical_stats.get('repair_electrical', 0) or 0) + (electronics_stats.get('repair_electronics', 0) or 0)
+        total_due_maintenance = today_due_electrical + today_due_electronics
+        
+        # Calculate uptime percentage correctly (avoid division by zero)
+        services_uptime = (total_working_devices / total_services_devices * 100) if total_services_devices > 0 else 0
+        
+        # Individual device counts for detailed display
+        electrical_device_count = electrical_stats.get('total_electrical', 0) or 0
+        electronics_device_count = electronics_stats.get('total_electronics', 0) or 0
+        active_projects_count = project_stats.get('active_projects', 0) or 0
+        
+        # Calculate realistic budget estimates based on device counts
+        # Electrical maintenance cost (estimated TSh 50,000 per device in maintenance/repair)
+        electrical_maintenance_cost = (
+            electrical_stats.get('maintenance_electrical', 0) * 50000 + 
+            electrical_stats.get('repair_electrical', 0) * 100000
+        )
+        
+        # Electronics maintenance cost (estimated TSh 30,000 per device in maintenance/repair)
+        electronics_maintenance_cost = (
+            electronics_stats.get('maintenance_electronics', 0) * 30000 + 
+            electronics_stats.get('repair_electronics', 0) * 75000
+        )
+        
+        # Active projects budget (estimated TSh 500,000 per active project)
+        active_projects_budget = active_projects_count * 500000
+        
+        # Calculate COGS (Cost of Goods Sold) from SaleItems
+        from .models import SaleItem
+        
+        # COGS calculation for the last 30 days
+        total_cogs = 0
+        last_month_cogs = 0
+        today_cogs = 0
+        
+        try:
+            # Calculate COGS by summing (quantity * product.cost_price) for each sale item
+            cogs_stats = SaleItem.objects.filter(
+                sale__sale_date__date__gte=thirty_days_ago
+            ).aggregate(
+                total_cogs=Sum(F('quantity') * F('product__cost_price')),
+                last_month_cogs=Sum(
+                    F('quantity') * F('product__cost_price'),
+                    filter=Q(sale__sale_date__date__gte=sixty_days_ago, 
+                            sale__sale_date__date__lt=thirty_days_ago)
+                ),
+                today_cogs=Sum(
+                    F('quantity') * F('product__cost_price'),
+                    filter=Q(sale__sale_date__date=today)
+                )
+            )
+            
+            total_cogs = cogs_stats['total_cogs'] or 0
+            last_month_cogs = cogs_stats['last_month_cogs'] or 0
+            today_cogs = cogs_stats['today_cogs'] or 0
+            
+        except Exception as e:
+            # Fallback if COGS calculation fails
+            total_cogs = 0
+            last_month_cogs = 0
+            today_cogs = 0
+        
+        # Calculate gross profit and margins
+        gross_profit = total_net_revenue - total_cogs
+        last_month_gross_profit = last_month_net - last_month_cogs
+        
+        # Calculate percentages
+        cogs_percentage = (total_cogs / total_net_revenue * 100) if total_net_revenue > 0 else 0
+        gross_margin = (gross_profit / total_net_revenue * 100) if total_net_revenue > 0 else 0
+        gross_profit_change = ((gross_profit - last_month_gross_profit) / abs(last_month_gross_profit) * 100) if last_month_gross_profit != 0 else 0
+        
+        # Compile stats for caching
+        stats = {
+            'total_products': product_stats['total_products'] or 0,
+            'total_sales': sales_stats['total_sales_count'] or 0,
+            'total_revenue': sales_stats['total_net_revenue'] or 0,
+            'total_expenses': total_expenses,
+            'profit': profit,
+            'revenue_change': revenue_change,
+            'expense_change': expense_change,
+            'profit_change': profit_change,
+            'today_sales': sales_stats['today_sales'] or 0,
+            'today_revenue': sales_stats['today_net'] or 0,
+            'today_expenses': today_expenses,
+            'today_profit': today_profit,
+            'low_stock_count': product_stats['low_stock'] or 0,
+            'total_stock_value': product_stats['total_stock_value'] or 0,
+            'low_stock_products': list(low_stock_products),
+            'recent_sales': list(recent_sales),
+            'recent_expenses': list(recent_expenses),
+            # Services overview data
+            'total_services_devices': total_services_devices,
+            'total_working_devices': total_working_devices,
+            'total_maintenance_devices': total_maintenance_devices,
+            'total_critical_devices': total_critical_devices,
+            'total_due_maintenance': total_due_maintenance,
+            'services_uptime': services_uptime,
+            'electrical_device_count': electrical_device_count,
+            'electronics_device_count': electronics_device_count,
+            'active_projects_count': active_projects_count,
+            # Budget/Cost variables with realistic calculations
+            'electrical_maintenance_cost': electrical_maintenance_cost,
+            'electronics_maintenance_cost': electronics_maintenance_cost,
+            'active_projects_budget': active_projects_budget,
+            # Financial summary variables
+            'total_cogs': total_cogs,
+            'gross_profit': gross_profit,
+            'cogs_percentage': cogs_percentage,
+            'gross_margin': gross_margin,
+            'gross_profit_change': gross_profit_change,
+        }
+        
+        # Cache for 5 minutes
+        cache.set(cache_key, stats, 300)
     
-    # Calculate revenue using net_amount (total_amount - discount + tax)
-    # This month's revenue
-    sales_data = Sale.objects.filter(sale_date__date__gte=thirty_days_ago)
-    total_revenue = 0
-    total_cogs = 0  # Cost of Goods Sold
+    # Get unread notifications count (not cached as it changes frequently)
+    unread_notifications = Notification.objects.filter(
+        user=request.user, 
+        is_read=False
+    ).count()
     
-    for sale in sales_data:
-        total_revenue += sale.net_amount
-        # Calculate COGS for this sale
-        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
-        for item in sale_items:
-            total_cogs += (item.product.cost_price * item.quantity)
+    context = {
+        'unread_notifications': unread_notifications,
+        **stats
+    }
     
-    # Last month's revenue and COGS for comparison
-    last_month_sales = Sale.objects.filter(
-        sale_date__date__gte=sixty_days_ago,
-        sale_date__date__lt=thirty_days_ago
-    )
-    last_month_revenue = 0
-    last_month_cogs = 0
-    
-    for sale in last_month_sales:
-        last_month_revenue += sale.net_amount
-        # Calculate COGS for last month
-        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
-        for item in sale_items:
-            last_month_cogs += (item.product.cost_price * item.quantity)
-    
-    # Today's revenue and COGS
-    today_sales = Sale.objects.filter(sale_date__date=today)
-    today_revenue = 0
-    today_cogs = 0
-    
-    for sale in today_sales:
-        today_revenue += sale.net_amount
-        # Calculate today's COGS
-        sale_items = SaleItem.objects.filter(sale=sale).select_related('product')
-        for item in sale_items:
-            today_cogs += (item.product.cost_price * item.quantity)
-    
-    # Calculate total expenses
-    total_expenses = Expense.objects.filter(expense_date__gte=thirty_days_ago).aggregate(
-        total=Sum('amount'))['total'] or 0
-    
-    # Last month's expenses for comparison
-    last_month_expenses = Expense.objects.filter(
-        expense_date__gte=sixty_days_ago,
-        expense_date__lt=thirty_days_ago
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    return render(request, 'dashboard.html', context)
+
+@login_required
+def product_list(request):
     
     # Calculate profit (revenue - COGS - operating expenses)
     # Gross Profit = Revenue - COGS
@@ -353,10 +573,6 @@ def dashboard(request):
     # Services uptime percentage
     services_uptime = (total_working_devices / total_services_devices * 100) if total_services_devices > 0 else 100
     
-    # Check if user has admin access for sensitive data
-    is_staff_user = request.user.is_staff
-    admin_verified = request.session.get('admin_verified', False) if not is_staff_user else True
-    
     context = {
         'total_products': total_products,
         'total_sales': total_sales,
@@ -390,9 +606,6 @@ def dashboard(request):
         'active_projects_budget': active_projects_budget,
         'total_active_projects': total_active_projects,
         'services_uptime': services_uptime,
-        # Admin access control
-        'is_staff_user': is_staff_user,
-        'admin_verified': admin_verified,
     }
     
     return render(request, 'dashboard.html', context)
@@ -511,48 +724,66 @@ def product_delete(request, pk):
 
 @login_required
 def sale_list(request):
-    from django.db.models import Sum, Count
-    from django.utils import timezone
-    from datetime import datetime, timedelta
+    # Optimize query with select_related and prefetch_related
+    sales = Sale.objects.select_related('customer', 'created_by').prefetch_related(
+        Prefetch('items', queryset=SaleItem.objects.select_related('product'))
+    ).order_by('-created_at')
     
-    sales = Sale.objects.select_related('customer', 'created_by').order_by('-created_at')
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        sales = sales.filter(
+            Q(customer__name__icontains=search) |
+            Q(created_by__username__icontains=search) |
+            Q(payment_method__icontains=search) |
+            Q(sale_type__icontains=search)
+        )
     
-    # Calculate statistics
-    now = timezone.now()
-    today = now.date()
-    current_month_start = today.replace(day=1)
+    # Date filter
+    date_filter = request.GET.get('date_filter')
+    if date_filter:
+        today = timezone.now().date()
+        if date_filter == 'today':
+            sales = sales.filter(sale_date__date=today)
+        elif date_filter == 'week':
+            week_ago = today - timedelta(days=7)
+            sales = sales.filter(sale_date__date__gte=week_ago)
+        elif date_filter == 'month':
+            month_ago = today - timedelta(days=30)
+            sales = sales.filter(sale_date__date__gte=month_ago)
     
-    # Today's revenue
-    today_revenue = Sale.objects.filter(
-        sale_date__date=today
-    ).aggregate(
-        total=Sum('total_amount')
-    )['total'] or 0
+    # Sale type filter
+    sale_type = request.GET.get('sale_type')
+    if sale_type:
+        sales = sales.filter(sale_type=sale_type)
     
-    # This month's revenue
-    month_revenue = Sale.objects.filter(
-        sale_date__date__gte=current_month_start
-    ).aggregate(
-        total=Sum('total_amount')
-    )['total'] or 0
+    # Use aggregation for statistics (more efficient than loops)
+    stats = {}
+    if not search and not date_filter and not sale_type:  # Only calculate stats for full list
+        now = timezone.now()
+        today = now.date()
+        current_month_start = today.replace(day=1)
+        
+        stats = Sale.objects.aggregate(
+            today_revenue=Sum('total_amount', filter=Q(sale_date__date=today)),
+            month_revenue=Sum('total_amount', filter=Q(sale_date__date__gte=current_month_start)),
+            total_count=Count('id')
+        )
     
-    # Total sales count
-    total_sales = sales.count()
-    
-    # Pending orders (assuming we might add status field later, for now show 0)
-    pending_orders = 0
-    
-    # Pagination
-    paginator = Paginator(sales, 20)
+    # Enhanced pagination with smaller page size
+    paginator = Paginator(sales, 12)  # Reduced from 20 to 12 for faster loading
     page_number = request.GET.get('page')
     sales_page = paginator.get_page(page_number)
     
     context = {
         'sales': sales_page,
-        'today_revenue': today_revenue,
-        'month_revenue': month_revenue,
-        'total_sales': total_sales,
-        'pending_orders': pending_orders,
+        'search_query': search,
+        'date_filter': date_filter,
+        'sale_type': sale_type,
+        'today_revenue': stats.get('today_revenue', 0),
+        'month_revenue': stats.get('month_revenue', 0),
+        'total_sales': stats.get('total_count', 0),
+        'pending_orders': 0,  # Placeholder
     }
     
     return render(request, 'sales/list.html', context)
@@ -925,26 +1156,67 @@ def project_detail(request, pk):
 
 @login_required
 def stock_in_list(request):
-    products = Product.objects.filter(is_active=True).select_related('category')
+    # Optimize product query with search and filtering
+    products = Product.objects.filter(is_active=True).select_related('category', 'supplier')
     
-    # Calculate stock values for each product
-    products_with_values = []
-    for product in products:
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        products = products.filter(
+            Q(name__icontains=search) |
+            Q(sku__icontains=search) |
+            Q(category__name__icontains=search)
+        )
+    
+    # Stock level filter
+    stock_filter = request.GET.get('stock_filter')
+    if stock_filter == 'low':
+        products = products.filter(stock_quantity__lte=F('min_stock_level'))
+    elif stock_filter == 'out':
+        products = products.filter(stock_quantity=0)
+    elif stock_filter == 'good':
+        products = products.filter(stock_quantity__gt=F('min_stock_level'))
+    
+    # Category filter
+    category_filter = request.GET.get('category')
+    if category_filter:
+        products = products.filter(category__name=category_filter)
+    
+    # Calculate aggregated statistics
+    stats = products.aggregate(
+        total_products=Count('id'),
+        low_stock_count=Count('id', filter=Q(stock_quantity__lte=F('min_stock_level'))),
+        out_of_stock_count=Count('id', filter=Q(stock_quantity=0)),
+        total_stock_value=Sum(F('stock_quantity') * F('cost_price'))
+    )
+    
+    # Pagination for products
+    paginator = Paginator(products, 12)  # 12 products per page
+    page_number = request.GET.get('page')
+    products_page = paginator.get_page(page_number)
+    
+    # Calculate stock values for paginated products only
+    for product in products_page:
         product.stock_value = product.stock_quantity * product.cost_price
-        products_with_values.append(product)
     
-    stock_movements = StockMovement.objects.select_related('product', 'created_by').order_by('-created_at')[:20]
+    # Get recent stock movements (limited to 10 for performance)
+    stock_movements = StockMovement.objects.select_related('product', 'created_by')\
+        .order_by('-created_at')[:10]
     
-    # Calculate absolute quantity for each movement
-    movements_with_abs = []
-    for movement in stock_movements:
-        movement.abs_quantity = abs(movement.quantity)
-        movements_with_abs.append(movement)
+    # Get categories for filter dropdown
+    categories = Category.objects.all()[:20]
     
-    return render(request, 'stock/list.html', {
-        'products': products_with_values,
-        'stock_movements': movements_with_abs
-    })
+    context = {
+        'products': products_page,
+        'stock_movements': stock_movements,
+        'categories': categories,
+        'search_query': search,
+        'stock_filter': stock_filter,
+        'category_filter': category_filter,
+        'stats': stats,
+    }
+    
+    return render(request, 'stock/list.html', context)
 
 @login_required
 def stock_movement(request):
@@ -1389,7 +1661,7 @@ def product_search_api(request):
 # Electrical Maintenance Views
 @login_required
 def electrical_list(request):
-    devices = ElectricalDevice.objects.all().order_by('-created_at')
+    devices = ElectricalDevice.objects.select_related('created_by').order_by('-created_at')
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -1412,12 +1684,22 @@ def electrical_list(request):
     if priority_filter:
         devices = devices.filter(priority=priority_filter)
     
-    # Statistics
+    # Pre-calculate statistics using database aggregation
     total_devices = devices.count()
-    working_devices = devices.filter(status='working').count()
-    maintenance_devices = devices.filter(status__in=['maintenance', 'repair']).count()
-    critical_devices = devices.filter(priority='critical').count()
-    due_maintenance = devices.filter(next_maintenance__lte=timezone.now().date()).count()
+    
+    # Use conditional aggregation for better performance
+    from django.db.models import Case, When, IntegerField
+    stats = devices.aggregate(
+        working_count=Count(Case(When(status='working', then=1), output_field=IntegerField())),
+        maintenance_count=Count(Case(When(status__in=['maintenance', 'repair'], then=1), output_field=IntegerField())),
+        critical_count=Count(Case(When(priority='critical', then=1), output_field=IntegerField())),
+        due_maintenance_count=Count(Case(When(next_maintenance__lte=timezone.now().date(), then=1), output_field=IntegerField()))
+    )
+    
+    working_devices = stats['working_count']
+    maintenance_devices = stats['maintenance_count']
+    critical_devices = stats['critical_count']
+    due_maintenance = stats['due_maintenance_count']
     
     # Pagination
     paginator = Paginator(devices, 10)
@@ -1831,52 +2113,91 @@ def settings_view(request):
 
 @login_required
 def debt_list(request):
-    """List all debts with filtering options"""
-    debts = Debt.objects.select_related('customer', 'sale').all()
+    """List all debts with filtering options - optimized for large datasets"""
+    debts = Debt.objects.select_related('customer', 'sale').prefetch_related(
+        Prefetch('payments', queryset=DebtPayment.objects.select_related('recorded_by'))
+    ).order_by('-created_at')
     
     # Filter by status
     status = request.GET.get('status')
     if status:
         debts = debts.filter(status=status)
     
-    # Filter by customer
+    # Filter by customer (optimized to use select_related)
     customer_id = request.GET.get('customer')
     if customer_id:
         debts = debts.filter(customer_id=customer_id)
     
-    # Search by customer name
+    # Search by customer name or phone
     search = request.GET.get('search')
     if search:
         debts = debts.filter(
             Q(customer__name__icontains=search) |
-            Q(customer__phone__icontains=search)
+            Q(customer__phone__icontains=search) |
+            Q(customer__national_id__icontains=search)
         )
     
-    # Update overdue debts
-    for debt in debts:
-        debt.update_status()
+    # Date range filter
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        debts = debts.filter(created_at__date__gte=date_from)
+    if date_to:
+        debts = debts.filter(created_at__date__lte=date_to)
     
-    # Paginate results
-    paginator = Paginator(debts, 20)
+    # Update overdue debts efficiently (only when needed)
+    if not search and not status:  # Avoid updating on filtered views
+        today = timezone.now().date()
+        overdue_count = Debt.objects.filter(
+            due_date__lt=today,
+            status__in=['outstanding', 'partial']
+        ).update(status='overdue')
+        
+        if overdue_count > 0:
+            messages.info(request, f'Updated {overdue_count} overdue debts.')
+    
+    # Enhanced pagination with smaller page size
+    paginator = Paginator(debts, 10)  # Reduced from 20 to 10
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    # Get customers for dropdown (limit to reduce load time)
+    customers = Customer.objects.filter(is_credit_approved=True)[:100]
+    
+    # Calculate summary statistics (only for unfiltered view)
+    summary = {}
+    if not search and not status and not customer_id:
+        summary = Debt.objects.aggregate(
+            total_outstanding=Sum('amount', filter=Q(status='outstanding')),
+            total_partial=Sum('amount', filter=Q(status='partial')),
+            total_overdue=Sum('amount', filter=Q(status='overdue')),
+            count_outstanding=Count('id', filter=Q(status='outstanding')),
+            count_overdue=Count('id', filter=Q(status='overdue'))
+        )
     
     context = {
         'title': 'Debt Management',
         'page_obj': page_obj,
-        'customers': Customer.objects.filter(is_credit_approved=True),
-        'debt_statuses': Debt.DEBT_STATUS_CHOICES,
+        'customers': customers,
+        'debt_statuses': [('outstanding', 'Outstanding'), ('partial', 'Partial'), ('paid', 'Paid'), ('overdue', 'Overdue')],
         'current_status': status,
         'current_customer': customer_id,
         'search_query': search,
+        'date_from': date_from,
+        'date_to': date_to,
+        'summary': summary,
+        'total_debts': paginator.count,
     }
+    
     return render(request, 'debts/list.html', context)
 
-
+@login_required
 @login_required
 def customer_list(request):
-    """List all customers with credit information"""
-    customers = Customer.objects.all()
+    """List all customers with credit information - optimized for large datasets"""
+    customers = Customer.objects.select_related().prefetch_related(
+        Prefetch('debts', queryset=Debt.objects.select_related('sale'))
+    ).order_by('-created_at')
     
     # Search functionality
     search = request.GET.get('search')
@@ -1884,7 +2205,8 @@ def customer_list(request):
         customers = customers.filter(
             Q(name__icontains=search) |
             Q(phone__icontains=search) |
-            Q(email__icontains=search)
+            Q(email__icontains=search) |
+            Q(national_id__icontains=search)
         )
     
     # Filter by credit status
@@ -1893,21 +2215,25 @@ def customer_list(request):
         customers = customers.filter(is_credit_approved=True)
     elif credit_filter == 'not_approved':
         customers = customers.filter(is_credit_approved=False)
+    elif credit_filter == 'has_debt':
+        customers = customers.filter(debts__isnull=False).distinct()
     
-    # Add debt information to customers
-    for customer in customers:
-        customer.total_debt = customer.current_debt
-    
-    # Paginate results
-    paginator = Paginator(customers, 20)
+    # Enhanced pagination with smaller page size for better performance
+    paginator = Paginator(customers, 10)  # Reduced from 20 to 10
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    # Add debt information only to customers on current page (more efficient)
+    for customer in page_obj:
+        customer.total_debt = customer.current_debt
+        customer.debt_count = customer.debts.count()
     
     context = {
         'title': 'Customer Management',
         'page_obj': page_obj,
         'search_query': search,
         'credit_filter': credit_filter,
+        'total_customers': paginator.count,
     }
     return render(request, 'customers/list.html', context)
 
@@ -2057,8 +2383,9 @@ def debt_payment(request, pk):
 @login_required
 def credit_sale_add(request):
     """Add a new credit sale"""
-    customers = Customer.objects.filter(is_credit_approved=True)
-    products = Product.objects.filter(stock_quantity__gt=0)
+    # Use select_related and caching for better performance
+    customers = Customer.objects.filter(is_credit_approved=True).select_related().order_by('name')
+    products = Product.objects.filter(stock_quantity__gt=0).select_related().order_by('name')
     
     if request.method == 'POST':
         customer_id = request.POST.get('customer')

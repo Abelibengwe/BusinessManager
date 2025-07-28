@@ -250,44 +250,63 @@
                     </table>
                 </div>
                 
-                <!-- Pagination -->
+                <!-- Modern Pagination -->
                 {% if expenses.has_other_pages %}
-                <div class="d-flex justify-content-between align-items-center p-4 border-top">
-                    <div class="text-muted">
-                        Showing {{ expenses.start_index }} to {{ expenses.end_index }} of {{ expenses.paginator.count }} expenses
-                    </div>
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% if expenses.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ expenses.previous_page_number }}">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                </li>
-                            {% endif %}
-                            
-                            {% for num in expenses.paginator.page_range %}
-                                {% if expenses.number == num %}
-                                    <li class="page-item active">
-                                        <span class="page-link">{{ num }}</span>
-                                    </li>
-                                {% elif num > expenses.number|add:'-3' and num < expenses.number|add:'3' %}
+                    <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-light rounded">
+                        <div class="text-muted small">
+                            Showing {{ expenses.start_index|default:1 }} to {{ expenses.end_index|default:expenses.paginator.count }} of {{ expenses.paginator.count }} expenses
+                        </div>
+                        <nav aria-label="Expenses pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if expenses.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        <a class="page-link rounded-pill me-1" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" title="First Page">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link rounded-pill me-1" href="?page={{ expenses.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" title="Previous">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
                                     </li>
                                 {% endif %}
-                            {% endfor %}
-                            
-                            {% if expenses.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ expenses.next_page_number }}">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                </div>
+                                
+                                <!-- Page Numbers -->
+                                {% for num in expenses.paginator.page_range %}
+                                    {% if expenses.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link rounded-pill me-1 bg-primary border-primary text-white">{{ num }}</span>
+                                        </li>
+                                    {% elif num > expenses.number|add:'-3' and num < expenses.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% elif num == 1 or num == expenses.paginator.num_pages %}
+                                        <li class="page-item">
+                                            <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% elif num == expenses.number|add:'-4' or num == expenses.number|add:'4' %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link rounded-pill me-1">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if expenses.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link rounded-pill me-1" href="?page={{ expenses.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" title="Next">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link rounded-pill" href="?page={{ expenses.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" title="Last Page">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
                 {% endif %}
                 
                 {% else %}

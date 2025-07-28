@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load business_filters %}
 
 {% block title %}Dashboard - Empire Dynamics{% endblock %}
 
@@ -84,31 +85,12 @@
                     <i class="fas fa-chart-line"></i>
                 </div>
                 
-                {% if not is_staff_user and not admin_verified %}
-                    <!-- Blurred content for non-staff users -->
-                    <div class="stat-value admin-protected-content">Tsh ••••••••</div>
-                    <div class="stat-label">Net Profit</div>
-                    <div class="stat-change admin-protected-content">
-                        <i class="fas fa-arrow-up"></i> 
-                        ••••% from last month
-                    </div>
-                    
-                    <!-- Overlay for admin authentication -->
-                    <div class="admin-access-overlay" onclick="showAdminModal()">
-                        <div class="admin-access-content">
-                            <i class="fas fa-lock admin-lock-icon"></i>
-                            <span class="admin-access-text">Admin Access Required</span>
-                        </div>
-                    </div>
-                {% else %}
-                    <!-- Normal content for staff users or authenticated admins -->
-                    <div class="stat-value">Tsh {{ profit|floatformat:0|intcomma|default:0 }}</div>
-                    <div class="stat-label">Net Profit</div>
-                    <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
-                        <i class="fas fa-arrow-{% if profit_change >= 0 %}up{% else %}down{% endif %}"></i> 
-                        {{ profit_change|floatformat:1 }}% from last month
-                    </div>
-                {% endif %}
+                <div class="stat-value">{{ profit|currency_no_decimal }}</div>
+                <div class="stat-label">Net Profit</div>
+                <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
+                    <i class="fas fa-arrow-{% if profit_change >= 0 %}up{% else %}down{% endif %}"></i> 
+                    {{ profit_change|floatformat:1 }}% from last month
+                </div>
             </div>
         </div>
     </div>
@@ -161,36 +143,16 @@
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-4 col-sm-6 col-12">
-                            <div class="border-end position-relative" id="netProfitSection">
-                                {% if not is_staff_user and not admin_verified %}
-                                <!-- Blurred content for non-admin users -->
-                                <div class="net-profit-blur">
-                                    <h4 class="text-success blur-text">
-                                        Tsh ••••••••
-                                    </h4>
-                                    <small class="text-muted">Net Profit</small>
-                                    <div class="mt-1">
-                                        <span class="badge bg-success blur-text">
-                                            •••• Margin
-                                        </span>
-                                    </div>
-                                    <div class="admin-lock-overlay" onclick="showAdminAuthModal()">
-                                        <i class="fas fa-lock"></i>
-                                        <small>Admin Access Required</small>
-                                    </div>
-                                </div>
-                                {% else %}
-                                <!-- Normal content for admin users -->
-                                <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                                    Tsh {{ net_profit|floatformat:0|intcomma|default:0 }}
+                            <div class="border-end" id="netProfitSection">
+                                <h4 class="{% if profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ profit|currency_no_decimal }}
                                 </h4>
                                 <small class="text-muted">Net Profit</small>
                                 <div class="mt-1">
-                                    <span class="badge {% if net_profit >= 0 %}bg-success{% else %}bg-danger{% endif %}">
-                                        {{ net_margin|floatformat:1 }}% Margin
+                                    <span class="badge {% if profit >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ profit_change|floatformat:1 }}% Change
                                     </span>
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-4 col-sm-6 col-12">
@@ -263,7 +225,7 @@
                             </div>
                         </div>
                         <div class="col-md-2 col-sm-4 col-6">
-                            <h4 class="text-primary">{{ total_active_projects|default:0 }}</h4>
+                            <h4 class="text-primary">{{ active_projects_count|default:0 }}</h4>
                             <small class="text-muted">Active Projects</small>
                             <div class="mt-1">
                                 <span class="badge bg-primary">Running</span>
@@ -280,7 +242,7 @@
                                     <strong>Electrical Budget</strong>
                                 </div>
                                 <div class="text-end">
-                                    <h5 class="mb-0 text-warning">Tsh {{ electrical_maintenance_cost|floatformat:0|intcomma|default:0 }}</h5>
+                                    <h5 class="mb-0 text-warning">{{ electrical_maintenance_cost|currency_no_decimal }}</h5>
                                     <div class="small text-muted">Maintenance Cost</div>
                                 </div>
                             </div>
@@ -292,7 +254,7 @@
                                     <strong>Electronics Budget</strong>
                                 </div>
                                 <div class="text-end">
-                                    <h5 class="mb-0 text-info">Tsh {{ electronics_maintenance_cost|floatformat:0|intcomma|default:0 }}</h5>
+                                    <h5 class="mb-0 text-info">{{ electronics_maintenance_cost|currency_no_decimal }}</h5>
                                     <div class="small text-muted">Maintenance Cost</div>
                                 </div>
                             </div>
@@ -304,7 +266,7 @@
                                     <strong>Projects Budget</strong>
                                 </div>
                                 <div class="text-end">
-                                    <h5 class="mb-0 text-primary">Tsh {{ active_projects_budget|floatformat:0|intcomma|default:0 }}</h5>
+                                    <h5 class="mb-0 text-primary">{{ active_projects_budget|currency_no_decimal }}</h5>
                                     <div class="small text-muted">Active Projects</div>
                                 </div>
                             </div>
@@ -320,7 +282,7 @@
                                     <strong>Electrical Devices</strong>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-warning">{{ total_electrical_devices|default:0 }}</span>
+                                    <span class="badge bg-warning">{{ electrical_device_count|default:0 }}</span>
                                     <div class="small text-muted">Devices</div>
                                 </div>
                             </div>
@@ -332,7 +294,7 @@
                                     <strong>Electronics Devices</strong>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-info">{{ total_electronics_devices|default:0 }}</span>
+                                    <span class="badge bg-info">{{ electronics_device_count|default:0 }}</span>
                                     <div class="small text-muted">Devices</div>
                                 </div>
                             </div>
@@ -419,39 +381,55 @@
     <div class="row g-4">
         <!-- Recent Sales -->
         <div class="col-xl-6">
-            <div class="modern-card">
+            <div class="modern-card" style="height: 400px;">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Recent Sales</h5>
-                        <a href="{% url 'sale_list' %}" class="text-primary text-decoration-none">View All</a>
+                        <a href="{% url 'sale_list' %}" class="text-primary text-decoration-none">
+                            <i class="fas fa-external-link-alt"></i> View All
+                        </a>
                     </div>
                 </div>
-                <div class="modern-card-body">
+                <div class="modern-card-body" style="max-height: 320px; overflow-y: auto;">
                     {% if recent_sales %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Customer</th>
-                                        <th>Amount</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for sale in recent_sales %}
-                                    <tr>
-                                        <td><strong>#{{ sale.id }}</strong></td>
-                                        <td>{{ sale.customer.name|default:"Walk-in Customer" }}</td>
-                                        <td>Tsh {{ sale.net_amount|floatformat:0|intcomma }}</td>
-                                        <td>{{ sale.sale_date|date:"M d, Y" }}</td>
-                                        <td><span class="badge badge-success">Completed</span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="space-y-3">
+                            {% for sale in recent_sales %}
+                            <div class="alert alert-primary border-0 mb-2" style="background: #f8f9ff; border-radius: 8px;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="alert-heading mb-1 text-primary">
+                                            <i class="fas fa-receipt"></i> Sale #{{ sale.id }}
+                                        </h6>
+                                        <p class="mb-1 small">
+                                            <strong>Customer:</strong> {{ sale.customer.name|default:"Walk-in Customer" }}
+                                        </p>
+                                        <p class="mb-1 small">
+                                            <strong>Amount:</strong> {{ sale.total_amount|currency }}
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="fas fa-calendar"></i> {{ sale.sale_date|date:"M d, Y H:i" }}
+                                            | <span class="badge {{ sale.sale_type|status_badge }}">{{ sale.sale_type|title }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="ml-3">
+                                        <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
+                        
+                        {% if recent_sales|length >= 5 %}
+                        <div class="text-center mt-3 pt-3 border-top">
+                            <small class="text-muted">Showing latest 5 sales</small>
+                            <br>
+                            <a href="{% url 'sale_list' %}" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fas fa-list"></i> View All Sales
+                            </a>
+                        </div>
+                        {% endif %}
                     {% else %}
                         <div class="text-center py-4">
                             <i class="fas fa-shopping-cart text-muted" style="font-size: 3rem;"></i>
@@ -467,35 +445,43 @@
 
         <!-- Low Stock Alerts -->
         <div class="col-xl-6">
-            <div class="modern-card">
+            <div class="modern-card" style="height: 400px;">
                 <div class="modern-card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Low Stock Alerts</h5>
-                        <a href="{% url 'product_list' %}" class="text-warning text-decoration-none">Manage Stock</a>
+                        <a href="{% url 'product_list' %}?stock=low" class="text-warning text-decoration-none">
+                            <i class="fas fa-external-link-alt"></i> View All
+                        </a>
                     </div>
                 </div>
-                <div class="modern-card-body">
+                <div class="modern-card-body" style="max-height: 320px; overflow-y: auto;">
                     {% if low_stock_products %}
                         <div class="list-group list-group-flush">
                             {% for product in low_stock_products %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ product.name }}</strong>
-                                    <br>
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                <div class="flex-grow-1">
+                                    <strong class="d-block">{{ product.name|truncatechars:25 }}</strong>
                                     <small class="text-muted">SKU: {{ product.sku }}</small>
+                                    {% if product.category %}
+                                        <small class="text-info ms-2">{{ product.category.name }}</small>
+                                    {% endif %}
                                 </div>
-                                <div class="text-end">
-                                    <span class="badge badge-warning">{{ product.stock_quantity }} left</span>
-                                    <br>
-                                    <small class="text-muted">Min: {{ product.min_stock_level }}</small>
+                                <div class="text-end ms-2">
+                                    <span class="badge bg-warning text-dark">{{ product.stock_quantity }} left</span>
+                                    <div class="small text-muted mt-1">Min: {{ product.min_stock_level }}</div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
+                        {% if low_stock_count > 5 %}
+                        <div class="text-center mt-3">
+                            <small class="text-muted">+{{ low_stock_count|add:"-5" }} more items with low stock</small>
+                        </div>
+                        {% endif %}
                     {% else %}
                         <div class="text-center py-4">
                             <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3">All products are well stocked!</p>
+                            <p class="text-muted mt-3 mb-0">All products are well stocked!</p>
                         </div>
                     {% endif %}
                 </div>
@@ -910,256 +896,51 @@ $(document).ready(function() {
         console.log('Set default chart period to 30 days');
     }, 1000);
 });
-
-// Admin authentication functions
-function showAdminModal() {
-    $('#adminAuthModal').modal('show');
-}
-
-function showAdminAuthModal() {
-    $('#adminAuthModal').modal('show');
-}
-
-function verifyAdminPassword() {
-    const password = document.getElementById('adminPassword').value;
-    const errorDiv = document.getElementById('adminPasswordError');
-    
-    if (!password) {
-        errorDiv.textContent = 'Please enter your password';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    // Show loading state
-    const submitBtn = document.querySelector('#adminAuthModal .btn-primary');
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
-    
-    // Make API call to verify password
-    fetch('/api/verify-admin-password/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': window.csrfToken
-        },
-        body: JSON.stringify({
-            password: password
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Hide modal and reload page to show net profit
-            $('#adminAuthModal').modal('hide');
-            window.location.reload();
-        } else {
-            errorDiv.textContent = data.message || 'Invalid password or insufficient privileges';
-            errorDiv.style.display = 'block';
-        }
-    })
-    .catch(error => {
-        console.error('Error verifying admin password:', error);
-        errorDiv.textContent = 'An error occurred. Please try again.';
-        errorDiv.style.display = 'block';
-    })
-    .finally(() => {
-        // Reset button state
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-}
-
-// Handle Enter key in password field
-document.addEventListener('DOMContentLoaded', function() {
-    const passwordInput = document.getElementById('adminPassword');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                verifyAdminPassword();
-            }
-        });
-    }
-});
 </script>
 
-<!-- Admin Authentication Modal -->
-<div class="modal fade" id="adminAuthModal" tabindex="-1" aria-labelledby="adminAuthModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="adminAuthModalLabel">
-                    <i class="fas fa-shield-alt text-warning me-2"></i>
-                    Admin Authentication Required
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-3">
-                    <i class="fas fa-lock fa-3x text-warning mb-3"></i>
-                    <p class="text-muted">This information is restricted to administrators only. Please enter your password to continue.</p>
-                </div>
-                
-                <div class="form-group">
-                    <label for="adminPassword" class="form-label">Password:</label>
-                    <input type="password" 
-                           class="form-control" 
-                           id="adminPassword" 
-                           placeholder="Enter your password"
-                           autocomplete="current-password">
-                </div>
-                
-                <div id="adminPasswordError" class="alert alert-danger mt-3" style="display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="verifyAdminPassword()">
-                    <i class="fas fa-unlock me-2"></i>Verify Access
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
-.net-profit-blur {
-    position: relative;
-}
-
-.blur-text {
-    filter: blur(3px);
-    -webkit-filter: blur(3px);
-    pointer-events: none;
-    user-select: none;
-}
-
-.admin-lock-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(1px);
-}
-
-.admin-lock-overlay:hover {
-    background: rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(2px);
-}
-
-.admin-lock-overlay i {
-    font-size: 1.5rem;
-    color: #6c757d;
-    margin-bottom: 4px;
-}
-
-.admin-lock-overlay small {
-    color: #6c757d;
-    font-size: 0.75rem;
-    text-align: center;
-    font-weight: 600;
-}
-
-#netProfitSection {
-    transition: all 0.3s ease;
-}
-
-#netProfitSection:hover .admin-lock-overlay {
-    transform: scale(1.02);
-}
-
-/* Modal styling */
-#adminAuthModal .modal-content {
-    border: none;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    border-radius: 12px;
-}
-
-#adminAuthModal .modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 12px 12px 0 0;
-}
-
-#adminAuthModal .btn-close {
-    filter: invert(1);
-}
-
-#adminAuthModal .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Admin Protected Content Styles */
-.admin-protected-content {
-    filter: blur(4px);
-    -webkit-filter: blur(4px);
-    pointer-events: none;
-    user-select: none;
-    transition: filter 0.3s ease;
-}
-
-.admin-access-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(1px);
-    z-index: 2;
-}
-
-.admin-access-overlay:hover {
-    background: rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(2px);
-    transform: scale(1.02);
-}
-
-.admin-access-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    color: #6c757d;
-}
-
-.admin-lock-icon {
-    font-size: 1.8rem;
-    margin-bottom: 8px;
-    color: #6c757d;
-    animation: lockPulse 2s infinite;
-}
-
-.admin-access-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #6c757d;
-}
-
-@keyframes lockPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-/* Ensure parent cards have proper positioning */
+/* Moderately compact dashboard cards */
 .stat-card {
     position: relative;
     overflow: hidden;
+    padding: 1.2rem !important;
+    min-height: 140px !important;
+}
+
+.stat-icon {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.3rem !important;
+}
+
+.stat-value {
+    font-size: 1.6rem !important;
+    font-weight: 600 !important;
+    margin: 0.4rem 0 !important;
+}
+
+.stat-label {
+    font-size: 0.85rem !important;
+    margin-bottom: 0.3rem !important;
+}
+
+.stat-change {
+    font-size: 0.75rem !important;
+}
+
+/* Slightly compact financial summary */
+.modern-card-body h4 {
+    font-size: 1.3rem !important;
+    margin-bottom: 0.3rem !important;
+}
+
+.modern-card-body small {
+    font-size: 0.75rem !important;
+}
+
+.modern-card-body .badge {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.5rem !important;
 }
 </style>
 {% endblock %}

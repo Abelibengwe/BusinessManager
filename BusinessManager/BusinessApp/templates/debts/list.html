@@ -300,46 +300,62 @@
                 </div>
             </div>
 
-            <!-- Pagination -->
+            <!-- Modern Pagination -->
             {% if page_obj.has_other_pages %}
-            <div class="card shadow-sm mt-4">
-                <div class="card-body py-3">
-                    <nav aria-label="Debt pagination">
-                        <ul class="pagination justify-content-center mb-0">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="First Page">
-                                        <i class="fas fa-angle-double-left"></i>
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Previous Page">
-                                        <i class="fas fa-angle-left"></i>
-                                    </a>  
-                                </li>
-                            {% endif %}
-
-                            <li class="page-item active">
-                                <span class="page-link bg-primary border-primary">
-                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                                </span>
-                            </li>
-
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Next Page">
-                                        <i class="fas fa-angle-right"></i>
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" title="Last Page">
-                                        <i class="fas fa-angle-double-right"></i>
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+            <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
+                <div class="text-muted small">
+                    Showing {{ page_obj.start_index|default:1 }} to {{ page_obj.end_index|default:page_obj.paginator.count }} of {{ page_obj.paginator.count }} entries
                 </div>
+                <nav aria-label="Debt pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link rounded-pill me-1" href="?page=1{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" title="First Page">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link rounded-pill me-1" href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" title="Previous">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>  
+                            </li>
+                        {% endif %}
+
+                        <!-- Page Numbers -->
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link rounded-pill me-1 bg-primary border-primary text-white">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                                <li class="page-item">
+                                    <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                                <li class="page-item disabled">
+                                    <span class="page-link rounded-pill me-1">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link rounded-pill me-1" href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" title="Next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link rounded-pill" href="?page={{ page_obj.paginator.num_pages }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_customer %}&customer={{ current_customer }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" title="Last Page">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
             </div>
             {% endif %}
         </div>

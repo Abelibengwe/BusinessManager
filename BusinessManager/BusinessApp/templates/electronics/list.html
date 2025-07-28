@@ -503,38 +503,56 @@
                     </table>
                 </div>
                 
-                <!-- Pagination -->
+                <!-- Modern Pagination -->
                 {% if devices.has_other_pages %}
-                    <div class="p-3 border-top">
-                        <nav aria-label="Devices pagination">
-                            <ul class="pagination justify-content-center mb-0">
+                    <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-light rounded">
+                        <div class="text-muted small">
+                            Showing {{ devices.start_index|default:1 }} to {{ devices.end_index|default:devices.paginator.count }} of {{ devices.paginator.count }} devices
+                        </div>
+                        <nav aria-label="Electronics devices pagination">
+                            <ul class="pagination pagination-sm mb-0">
                                 {% if devices.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                        <a class="page-link rounded-pill me-1" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" title="First Page">
                                             <i class="fas fa-angle-double-left"></i>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ devices.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
-                                            <i class="fas fa-angle-left"></i>
+                                        <a class="page-link rounded-pill me-1" href="?page={{ devices.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" title="Previous">
+                                            <i class="fas fa-chevron-left"></i>
                                         </a>
                                     </li>
                                 {% endif %}
                                 
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        Page {{ devices.number }} of {{ devices.paginator.num_pages }}
-                                    </span>
-                                </li>
+                                <!-- Page Numbers -->
+                                {% for num in devices.paginator.page_range %}
+                                    {% if devices.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link rounded-pill me-1 bg-primary border-primary text-white">{{ num }}</span>
+                                        </li>
+                                    {% elif num > devices.number|add:'-3' and num < devices.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% elif num == 1 or num == devices.paginator.num_pages %}
+                                        <li class="page-item">
+                                            <a class="page-link rounded-pill me-1" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% elif num == devices.number|add:'-4' or num == devices.number|add:'4' %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link rounded-pill me-1">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
                                 
                                 {% if devices.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ devices.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
-                                            <i class="fas fa-angle-right"></i>
+                                        <a class="page-link rounded-pill me-1" href="?page={{ devices.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" title="Next">
+                                            <i class="fas fa-chevron-right"></i>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ devices.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                        <a class="page-link rounded-pill" href="?page={{ devices.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&device_type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" title="Last Page">
                                             <i class="fas fa-angle-double-right"></i>
                                         </a>
                                     </li>

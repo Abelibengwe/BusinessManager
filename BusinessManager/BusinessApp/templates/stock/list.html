@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load business_filters %}
 
 {% block title %}Stock Management - Empire Dynamics{% endblock %}
 
@@ -197,7 +198,7 @@
                         <i class="fas fa-boxes"></i>
                     </div>
                     <div class="ms-3">
-                        <div class="fs-4 fw-bold text-primary">{{ products.count }}</div>
+                        <div class="fs-4 fw-bold text-primary">{{ stats.total_products|default:0 }}</div>
                         <div class="text-muted small">Total Products</div>
                     </div>
                 </div>
@@ -211,13 +212,7 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <div class="ms-3">
-                        {% with low_stock_count=products|dictsort:"stock_quantity"|dictsort:"min_stock_level" %}
-                        <div class="fs-4 fw-bold text-danger">
-                            {% for product in products %}
-                                {% if product.stock_quantity <= product.min_stock_level %}{{ forloop.counter }}{% endif %}
-                            {% empty %}0{% endfor %}
-                        </div>
-                        {% endwith %}
+                        <div class="fs-4 fw-bold text-danger">{{ stats.low_stock_count|default:0 }}</div>
                         <div class="text-muted small">Low Stock Items</div>
                     </div>
                 </div>
@@ -231,11 +226,7 @@
                         <i class="fas fa-times-circle"></i>
                     </div>
                     <div class="ms-3">
-                        <div class="fs-4 fw-bold text-secondary">
-                            {% for product in products %}
-                                {% if product.stock_quantity == 0 %}{{ forloop.counter }}{% endif %}
-                            {% empty %}0{% endfor %}
-                        </div>
+                        <div class="fs-4 fw-bold text-secondary">{{ stats.out_of_stock_count|default:0 }}</div>
                         <div class="text-muted small">Out of Stock</div>
                     </div>
                 </div>
@@ -249,7 +240,7 @@
                         <i class="fas fa-exchange-alt"></i>
                     </div>
                     <div class="ms-3">
-                        <div class="fs-4 fw-bold text-success">{{ stock_movements.count }}</div>
+                        <div class="fs-4 fw-bold text-success">{{ stock_movements|length }}</div>
                         <div class="text-muted small">Recent Movements</div>
                     </div>
                 </div>
@@ -270,33 +261,42 @@
                 
                 <!-- Search Section -->
                 <div class="p-3 border-bottom">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                <input type="text" class="form-control" id="productSearch" 
-                                       placeholder="Search products by name or SKU...">
+                    <form method="GET" class="mb-0">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" name="search" 
+                                           value="{{ search_query|default:'' }}"
+                                           placeholder="Search products by name or SKU...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="stock_filter">
+                                    <option value="">All Stock Levels</option>
+                                    <option value="good" {% if stock_filter == 'good' %}selected{% endif %}>Good Stock</option>
+                                    <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock</option>
+                                    <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of Stock</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex gap-2">
+                                    <select class="form-select" name="category">
+                                        <option value="">All Categories</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.name }}" 
+                                                    {% if category_filter == category.name %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-filter"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="stockFilter">
-                                <option value="">All Stock Levels</option>
-                                <option value="in_stock">In Stock</option>
-                                <option value="low_stock">Low Stock</option>
-                                <option value="out_of_stock">Out of Stock</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="categoryFilter">
-                                <option value="">All Categories</option>
-                                {% for product in products %}
-                                    {% if product.category %}
-                                        <option value="{{ product.category.name }}">{{ product.category.name }}</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                    </form>
                 </div>
                 
                 {% if products %}
@@ -377,13 +377,58 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    {% if products.has_other_pages %}
+                    <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                        <div class="small text-muted">
+                            Showing {{ products.start_index }} to {{ products.end_index }} of {{ products.paginator.count }} products
+                        </div>
+                        <nav aria-label="Products pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if products.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if stock_filter %}stock_filter={{ stock_filter }}&{% endif %}{% if category_filter %}category={{ category_filter }}&{% endif %}page={{ products.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in products.paginator.page_range %}
+                                    {% if products.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if stock_filter %}stock_filter={{ stock_filter }}&{% endif %}{% if category_filter %}category={{ category_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if products.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if stock_filter %}stock_filter={{ stock_filter }}&{% endif %}{% if category_filter %}category={{ category_filter }}&{% endif %}page={{ products.next_page_number }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
                 {% else %}
                     <div class="empty-state">
                         <i class="fas fa-boxes"></i>
                         <h4>No Products Found</h4>
-                        <p class="mb-4">You haven't added any products to your inventory yet.</p>
+                        <p class="mb-4">{% if search_query or stock_filter or category_filter %}No products match your current filters.{% else %}You haven't added any products to your inventory yet.{% endif %}</p>
+                        {% if search_query or stock_filter or category_filter %}
+                            <a href="{% url 'stock_in_list' %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </a>
+                        {% endif %}
                         <a href="{% url 'product_add' %}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-plus me-2"></i>Add Your First Product
+                            <i class="fas fa-plus me-2"></i>Add Product
                         </a>
                     </div>
                 {% endif %}
@@ -392,21 +437,22 @@
         
         <div class="col-lg-4">
             <!-- Recent Stock Movements -->
-            <div class="section-card">
+            <div class="section-card" style="height: 600px;">
                 <div class="section-header">
                     <h5 class="mb-0">
                         <i class="fas fa-history me-2"></i>Recent Movements
+                        <span class="badge bg-light text-dark ms-2">{{ stock_movements|length }}</span>
                     </h5>
                 </div>
                 
-                <div class="recent-movements">
+                <div class="recent-movements" style="max-height: 500px; overflow-y: auto;">
                     {% if stock_movements %}
                         {% for movement in stock_movements %}
                         <div class="movement-item movement-{{ movement.movement_type }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold">{{ movement.product.name }}</div>
-                                    <div class="text-muted small">{{ movement.reason }}</div>
+                                    <div class="fw-bold">{{ movement.product.name|truncatechars:20 }}</div>
+                                    <div class="text-muted small">{{ movement.reason|truncatechars:30 }}</div>
                                     <div class="text-muted small">
                                         <i class="fas fa-user me-1"></i>{{ movement.created_by.username }}
                                         <span class="ms-2">
@@ -419,7 +465,7 @@
                                         {% if movement.movement_type == 'in' %}text-success
                                         {% elif movement.movement_type == 'out' %}text-danger
                                         {% else %}text-info{% endif %}">
-                                        {% if movement.movement_type == 'in' %}+{% elif movement.movement_type == 'out' %}-{% endif %}{{ movement.abs_quantity }}
+                                        {% if movement.movement_type == 'in' %}+{% elif movement.movement_type == 'out' %}-{% endif %}{{ movement.quantity|abs_value }}
                                     </div>
                                     <div class="text-muted small">
                                         {% if movement.movement_type == 'in' %}Stock In
@@ -430,6 +476,9 @@
                             </div>
                         </div>
                         {% endfor %}
+                        <div class="text-center p-3 border-top">
+                            <small class="text-muted">Showing last 10 movements</small>
+                        </div>
                     {% else %}
                         <div class="text-center p-4">
                             <i class="fas fa-history fa-3x text-muted mb-3"></i>
